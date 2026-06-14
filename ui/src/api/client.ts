@@ -136,6 +136,19 @@ export interface TorrentFileDto {
   priority: number;
 }
 
+export interface PreviewFileItem {
+  index: number;
+  path: string;
+  size: number;
+  selected: boolean;
+}
+
+export interface DownloadFilterResult {
+  totalFiles: number;
+  excludedFiles: number;
+  torrentName: string;
+}
+
 export interface CreateDownloadClientInput {
   name: string;
   type: string;
@@ -385,6 +398,7 @@ export interface PtSearchResultWithSite {
   grabs?: number;
   category: string;
   categoryName: string;
+  categoryDisplayName: string;
   uploadTime: string;
   downloadUrl: string;
   detailUrl: string;
@@ -477,5 +491,30 @@ export const downloadsApi = {
       get<TransferInfoDto>(`/clients/${clientId}/transfer-info`),
     files: (clientId: string, hash: string) =>
       get<TorrentFileDto[]>(`/clients/${clientId}/torrent-files/${hash}`),
+  },
+
+  // Torrent preview and filtered download
+  torrent: {
+    preview: (body: { siteId: string; torrentId: string }) =>
+      post<PreviewFileItem[]>("/torrent/preview", body),
+    resolvePath: (body: { clientId: string; category?: string }) =>
+      post<{ path: string | null; allPaths: unknown[] }>(
+        "/torrent/resolve-path",
+        body,
+      ),
+    downloadFiltered: (body: {
+      clientId: string;
+      siteId: string;
+      torrentId: string;
+      savePath?: string;
+      category?: string;
+      category?: string;
+      tags?: string[];
+      siteId?: string;
+      apiKey?: string;
+      cookies?: string;
+      season?: number;
+      episodes?: number[];
+    }) => post<DownloadFilterResult>("/torrent/download-filtered", body),
   },
 };

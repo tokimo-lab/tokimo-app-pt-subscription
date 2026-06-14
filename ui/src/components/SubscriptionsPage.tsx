@@ -16,6 +16,22 @@ import { FileText, PlayIcon, Plus } from "lucide-react";
 import { useCallback } from "react";
 import { type Subscription, subscriptionsApi } from "../api/client";
 
+const categoryLabel: Record<string, string> = {
+  movie: "电影",
+  tv: "剧集",
+  anime: "动漫",
+  documentary: "纪录片",
+  variety: "综艺",
+  sports: "体育",
+  music: "音乐",
+  ebook: "电子书",
+  audiobook: "有声书",
+  software: "软件",
+  game: "游戏",
+  course: "课程",
+  other: "其他",
+};
+
 const statusColors: Record<string, string> = {
   active: "blue",
   paused: "orange",
@@ -174,7 +190,11 @@ export default function SubscriptionsPage() {
       key: "category",
       width: 70,
       render: (_: unknown, record: Subscription) =>
-        record.category ? <Tag>{record.category}</Tag> : "-",
+        record.category ? (
+          <Tag>{categoryLabel[record.category] ?? record.category}</Tag>
+        ) : (
+          "-"
+        ),
     },
     {
       title: "过滤",

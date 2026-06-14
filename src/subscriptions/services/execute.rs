@@ -9,12 +9,15 @@ use crate::subscriptions::repos::subscription_repo::SubscriptionRepo;
 use crate::subscriptions::handlers::subscription as sub_handler;
 use crate::services::DownloadClientService;
 use crate::shared::filter_options::resolve_download_path;
+use crate::shared::categories::category_to_en_name;
 use crate::subscriptions::models::pt_site::PtSiteDto;
 use crate::subscriptions::repos::pt_site_repo::PtSiteRepo;
 use crate::subscriptions::services::pt_search::search_all_sites;
 use crate::subscriptions::services::scorer::{FilterPrefs, rank_torrents};
 use crate::AppState;
 use tokimo_package_client_api::downloaders::traits::AddTorrentOptions;
+use crate::shared::episode_parser::should_include_file;
+use crate::shared::torrent_parser::parse_torrent;
 
 fn build_search_keywords(sub: &subscriptions::Model) -> Vec<String> {
     let title = &sub.title;
@@ -143,8 +146,9 @@ pub async fn execute_subscription(state: &Arc<AppState>, sub_id: &str) -> bool {
                     .iter()
                     .map(|p| (p.r#type.clone(), p.path.clone(), p.description.clone()))
                     .collect();
-                let cat = sub.category.as_deref().unwrap_or("global");
-                resolve_download_path(&paths, cat)
+                let cat_raw = sub.category.as_deref().unwrap_or("global");
+                let cat = category_to_en_name(cat_raw);
+                resolve_download_path(&paths, &cat)
             }
             _ => None,
         }
@@ -317,13 +321,52 @@ pub async fn execute_subscription(state: &Arc<AppState>, sub_id: &str) -> bool {
                                                         &format!("种子文件下载成功，大小: {} bytes", bytes.len()),
                                                         None,
                                                     ).await;
+
+                                                    // Parse torrent to get file list for episode filtering
+                                                    let excluded_indices = match parse_torrent(&bytes) {
+                                                        Ok(meta) => {
+                                                            let filter_season = sub.season.as_ref().and_then(|s| s.parse::<i32>().ok());
+                                                            let filter_episodes: Vec<i32> = sub.episodes.as_ref()
+                                                                .and_then(|e| serde_json::from_value::<Vec<i32>>(e.clone()).ok())
+                                                                .unwrap_or_default();
+                                                            let has_filter = filter_season.is_some() || !filter_episodes.is_empty();
+
+                                                            if has_filter {
+                                                                let excluded: Vec<u32> = meta.files.iter()
+                                                                    .filter(|f| !should_include_file(&f.path, filter_season, &filter_episodes))
+                                                                    .map(|f| f.index as u32)
+                                                                    .collect();
+
+                                                                if !excluded.is_empty() {
+                                                                    sub_handler::append_log(
+                                                                        &storage, sub_id, &run_id, "downloading",
+                                                                        &format!("集数过滤: 共 {} 个文件，排除 {} 个", meta.files.len(), excluded.len()),
+                                                                        None,
+                                                                    ).await;
+                                                                }
+                                                                excluded
+                                                            } else {
+                                                                vec![]
+                                                            }
+                                                        }
+                                                        Err(e) => {
+                                                            sub_handler::append_log(
+                                                                &storage, sub_id, &run_id, "downloading",
+                                                                &format!("解析种子文件失败，跳过集数过滤: {e}"),
+                                                                None,
+                                                            ).await;
+                                                            vec![]
+                                                        }
+                                                    };
+
+                                                    let need_filter = !excluded_indices.is_empty();
                                                     AddTorrentOptions {
                                                         urls: None,
                                                         torrents: Some(vec![b64]),
                                                         save_path: save_path.clone(),
                                                         category: sub.category.clone(),
                                                         tags: Some(vec!["tokimo-subscription".into()]),
-                                                        paused: Some(false),
+                                                        paused: if need_filter { Some(true) } else { Some(false) },
                                                         skip_hash_check: None,
                                                     }
                                                 }

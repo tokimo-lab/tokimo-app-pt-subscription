@@ -19,8 +19,10 @@ pub struct PtSearchResultWithSite {
     pub result: PtSearchResult,
     pub site_db_id: String,
     pub site_name: String,
-    /// Canonical category name (resolved from mapping)
+    /// Canonical category name in English (e.g. "music", "movie")
     pub category_name: String,
+    /// Canonical category display name in Chinese (e.g. "音乐", "电影")
+    pub category_display_name: String,
     /// Canonical category ID
     pub canonical_category_id: String,
 }
@@ -133,7 +135,7 @@ pub async fn search_all_sites(
             fix_urls(&mut result, &site.domain, &site.site_id);
 
             // Resolve category using static mapping
-            let (cat_canonical, cat_name) = resolve_category(&site.site_id, &result.category);
+            let (cat_canonical, cat_name, cat_display) = resolve_category(&site.site_id, &result.category);
 
             // Apply category filter (match against canonical ID)
             if !canonical_filters.is_empty()
@@ -148,6 +150,7 @@ pub async fn search_all_sites(
                 site_db_id: site.id.clone(),
                 site_name: site.name.clone(),
                 category_name: cat_name,
+                category_display_name: cat_display,
                 canonical_category_id: cat_canonical,
             });
         }

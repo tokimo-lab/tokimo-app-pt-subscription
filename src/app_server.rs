@@ -85,6 +85,10 @@ fn build_router(ctx: Arc<AppState>) -> Router {
             get(handlers::get_torrent_files),
         )
         .route("/clients/{id}/file-priority", post(handlers::set_file_priority))
+        // Torrent preview and filtered download
+        .route("/torrent/preview", post(handlers::preview_torrent_files))
+        .route("/torrent/resolve-path", post(handlers::resolve_save_path))
+        .route("/torrent/download-filtered", post(handlers::download_with_filter))
         // Static assets
         .route("/assets/{*path}", get(assets::serve))
         .with_state(ctx)

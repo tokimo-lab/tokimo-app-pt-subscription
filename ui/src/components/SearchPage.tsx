@@ -371,7 +371,18 @@ export default function SearchPage() {
   };
 
   const handleDownload = (torrent: PtSearchResultWithSite) => {
-    window.open(torrent.downloadUrl, "_blank");
+    windowActions.openModalWindow({
+      component: () => import("./DownloadConfirmWindow"),
+      title: "下载确认",
+      width: 600,
+      height: 700,
+      metadata: {
+        torrent,
+        onSuccess: () => {
+          // no-op
+        },
+      },
+    });
   };
 
   const showInitialState = !hasSearched;

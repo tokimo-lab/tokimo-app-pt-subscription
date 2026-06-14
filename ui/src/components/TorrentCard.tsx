@@ -169,7 +169,7 @@ export function TorrentCardBody({ torrent }: TorrentCardBodyProps) {
           </Tooltip>
         )}
 
-        <div className="mt-2 flex flex-wrap gap-1">
+        <div className="mt-2 flex flex-wrap items-center gap-1">
           {discountTags}
           {mediaTags}
           {torrent.imdbUrl && (
@@ -177,6 +177,7 @@ export function TorrentCardBody({ torrent }: TorrentCardBodyProps) {
               href={torrent.imdbUrl}
               target="_blank"
               rel="noreferrer"
+              className="inline-flex items-center"
               onClick={(e) => e.stopPropagation()}
             >
               <Tag color="gold">
@@ -190,6 +191,7 @@ export function TorrentCardBody({ torrent }: TorrentCardBodyProps) {
               href={torrent.doubanUrl}
               target="_blank"
               rel="noreferrer"
+              className="inline-flex items-center"
               onClick={(e) => e.stopPropagation()}
             >
               <Tag color="green">
@@ -204,7 +206,9 @@ export function TorrentCardBody({ torrent }: TorrentCardBodyProps) {
             {torrent.siteName}
           </Tag>
           <Tag color={getCategoryColor(torrent.category)} className="mr-0">
-            {torrent.categoryName || getCategoryName(torrent.category)}
+            {torrent.categoryDisplayName ||
+              torrent.categoryName ||
+              getCategoryName(torrent.category)}
           </Tag>
           <span className="text-fg-muted">{torrent.size}</span>
           {torrent.uploadTime && (

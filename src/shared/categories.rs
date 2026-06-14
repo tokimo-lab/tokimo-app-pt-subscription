@@ -98,6 +98,26 @@ impl Category {
             _ => None,
         }
     }
+
+    /// Resolve from Chinese display name (e.g. "音乐" → Music).
+    pub fn from_name(name: &str) -> Option<Self> {
+        match name {
+            "电影" => Some(Category::Movie),
+            "剧集" => Some(Category::Tv),
+            "动漫" => Some(Category::Anime),
+            "纪录片" => Some(Category::Documentary),
+            "综艺" => Some(Category::Variety),
+            "体育" => Some(Category::Sports),
+            "音乐" => Some(Category::Music),
+            "电子书" => Some(Category::Ebook),
+            "有声书" => Some(Category::Audiobook),
+            "软件" => Some(Category::Software),
+            "游戏" => Some(Category::Game),
+            "课程" => Some(Category::Course),
+            "其他" => Some(Category::Other),
+            _ => None,
+        }
+    }
 }
 
 /// Site-specific category mapping.
@@ -208,20 +228,21 @@ pub fn canonical_id_from_category(cat: Category) -> String {
 }
 
 /// Resolve category from a raw site category ID.
-/// Returns (canonical_id_string, category_name).
-pub fn resolve_category(site_id: &str, raw_category: &str) -> (String, String) {
+/// Returns (canonical_id_string, en_name, display_name).
+pub fn resolve_category(site_id: &str, raw_category: &str) -> (String, String, String) {
     if let Some(cat) = map_site_category(site_id, raw_category) {
-        (canonical_id_from_category(cat), cat.name().to_string())
+        (canonical_id_from_category(cat), cat.en_name().to_string(), cat.name().to_string())
     } else {
         // Unknown category - use "other"
         (
             canonical_id_from_category(Category::Other),
+            Category::Other.en_name().to_string(),
             Category::Other.name().to_string(),
         )
     }
 }
 
-/// Resolve from English name or canonical ID string.
+/// Resolve from English name, Chinese name, or canonical ID string.
 pub fn resolve_from_str(s: &str) -> Option<Category> {
     // Try as integer ID first
     if let Ok(id) = s.parse::<i32>() {
@@ -229,6 +250,16 @@ pub fn resolve_from_str(s: &str) -> Option<Category> {
     }
     // Try as English name
     Category::from_en_name(s)
+        // Try as Chinese name
+        .or_else(|| Category::from_name(s))
+}
+
+/// Normalize category string to English en_name for path lookup.
+/// Accepts: English name ("music"), Chinese name ("音乐"), or canonical ID ("7").
+pub fn category_to_en_name(s: &str) -> String {
+    resolve_from_str(s)
+        .map(|c| c.en_name().to_string())
+        .unwrap_or_else(|| s.to_string())
 }
 
 /// Get all category names for display.
