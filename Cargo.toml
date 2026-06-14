@@ -46,6 +46,9 @@ futures-util = "0.3"
 async-trait = "0.1"
 bytes       = "1"
 
+# .torrent 文件解析
+bendy = "0.5"
+
 # Storage
 tokimo-package-storage = { git = "https://github.com/tokimo-lab/tokimo-package-storage.git", rev = "db9dff2" }
 

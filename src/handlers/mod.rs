@@ -16,6 +16,8 @@ use crate::db::repos::download_client_repo::{
     CreateDownloadClientInput, DownloadClientRepo, ReorderItem, UpdateDownloadClientInput,
 };
 use crate::services::DownloadClientService;
+use crate::shared::episode_parser::should_include_file;
+use crate::shared::torrent_parser::{TorrentFileInfo, parse_torrent};
 
 // ── Request types ─────────────────────────────────────────────────────────────
 
