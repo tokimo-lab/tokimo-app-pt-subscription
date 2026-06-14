@@ -4,9 +4,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
 
+use crate::AppError;
 use crate::db::entities::{download_records, pt_sites};
 use crate::db::repos::system_config_repo::{SystemConfigRepo, SystemConfigSection};
-use crate::AppError;
 
 // ── TrafficManageSettings ─────────────────────────────────────────────────────
 

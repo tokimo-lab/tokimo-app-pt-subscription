@@ -231,7 +231,11 @@ pub fn canonical_id_from_category(cat: Category) -> String {
 /// Returns (canonical_id_string, en_name, display_name).
 pub fn resolve_category(site_id: &str, raw_category: &str) -> (String, String, String) {
     if let Some(cat) = map_site_category(site_id, raw_category) {
-        (canonical_id_from_category(cat), cat.en_name().to_string(), cat.name().to_string())
+        (
+            canonical_id_from_category(cat),
+            cat.en_name().to_string(),
+            cat.name().to_string(),
+        )
     } else {
         // Unknown category - use "other"
         (
@@ -268,15 +272,39 @@ pub fn all_categories() -> Vec<(i32, &'static str, &'static str)> {
         (Category::Movie.id(), Category::Movie.en_name(), Category::Movie.name()),
         (Category::Tv.id(), Category::Tv.en_name(), Category::Tv.name()),
         (Category::Anime.id(), Category::Anime.en_name(), Category::Anime.name()),
-        (Category::Documentary.id(), Category::Documentary.en_name(), Category::Documentary.name()),
-        (Category::Variety.id(), Category::Variety.en_name(), Category::Variety.name()),
-        (Category::Sports.id(), Category::Sports.en_name(), Category::Sports.name()),
+        (
+            Category::Documentary.id(),
+            Category::Documentary.en_name(),
+            Category::Documentary.name(),
+        ),
+        (
+            Category::Variety.id(),
+            Category::Variety.en_name(),
+            Category::Variety.name(),
+        ),
+        (
+            Category::Sports.id(),
+            Category::Sports.en_name(),
+            Category::Sports.name(),
+        ),
         (Category::Music.id(), Category::Music.en_name(), Category::Music.name()),
         (Category::Ebook.id(), Category::Ebook.en_name(), Category::Ebook.name()),
-        (Category::Audiobook.id(), Category::Audiobook.en_name(), Category::Audiobook.name()),
-        (Category::Software.id(), Category::Software.en_name(), Category::Software.name()),
+        (
+            Category::Audiobook.id(),
+            Category::Audiobook.en_name(),
+            Category::Audiobook.name(),
+        ),
+        (
+            Category::Software.id(),
+            Category::Software.en_name(),
+            Category::Software.name(),
+        ),
         (Category::Game.id(), Category::Game.en_name(), Category::Game.name()),
-        (Category::Course.id(), Category::Course.en_name(), Category::Course.name()),
+        (
+            Category::Course.id(),
+            Category::Course.en_name(),
+            Category::Course.name(),
+        ),
         (Category::Other.id(), Category::Other.en_name(), Category::Other.name()),
     ]
 }

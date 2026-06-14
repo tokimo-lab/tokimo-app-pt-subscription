@@ -16,11 +16,11 @@ use crate::db::repos::download_client_repo::{
     CreateDownloadClientInput, DownloadClientRepo, ReorderItem, UpdateDownloadClientInput,
 };
 use crate::services::DownloadClientService;
-use crate::subscriptions::repos::pt_site_repo::PtSiteRepo;
-use crate::shared::filter_options::resolve_download_path;
 use crate::shared::categories::category_to_en_name;
-use crate::shared::torrent_parser::parse_torrent;
 use crate::shared::episode_parser::should_include_file;
+use crate::shared::filter_options::resolve_download_path;
+use crate::shared::torrent_parser::parse_torrent;
+use crate::subscriptions::repos::pt_site_repo::PtSiteRepo;
 
 // ── Reusable torrent download helper ─────────────────────────────────────────
 
@@ -46,14 +46,17 @@ async fn download_torrent_bytes(
             None => String::new(),
         };
 
-        let mut req = no_redirect_client.post(download_url)
+        let mut req = no_redirect_client
+            .post(download_url)
             .header("Content-Type", "application/x-www-form-urlencoded")
             .body(form_body);
         if let Some(key) = api_key {
             req = req.header("x-api-key", key);
         }
 
-        let resp = req.send().await
+        let resp = req
+            .send()
+            .await
             .map_err(|e| AppError::bad_request(format!("调用 genDlToken 失败: {e}")))?;
 
         let status = resp.status();
@@ -61,10 +64,13 @@ async fn download_torrent_bytes(
             return Err(AppError::bad_request(format!("genDlToken 失败: HTTP {}", status)));
         }
 
-        let json: serde_json::Value = resp.json().await
+        let json: serde_json::Value = resp
+            .json()
+            .await
             .map_err(|e| AppError::bad_request(format!("解析 genDlToken 响应失败: {e}")))?;
 
-        let real_url = json.get("data")
+        let real_url = json
+            .get("data")
             .and_then(|d| d.as_str())
             .ok_or_else(|| AppError::bad_request("genDlToken 未返回下载链接"))?;
 
@@ -76,14 +82,22 @@ async fn download_torrent_bytes(
             .build()
             .unwrap_or_else(|_| http_client.clone());
 
-        let torrent_resp = dl_client.get(real_url).send().await
+        let torrent_resp = dl_client
+            .get(real_url)
+            .send()
+            .await
             .map_err(|e| AppError::bad_request(format!("下载种子文件失败: {e}")))?;
 
         if !torrent_resp.status().is_success() {
-            return Err(AppError::bad_request(format!("下载种子文件失败: HTTP {}", torrent_resp.status())));
+            return Err(AppError::bad_request(format!(
+                "下载种子文件失败: HTTP {}",
+                torrent_resp.status()
+            )));
         }
 
-        torrent_resp.bytes().await
+        torrent_resp
+            .bytes()
+            .await
             .map_err(|e| AppError::bad_request(format!("读取种子文件失败: {e}")))
     } else {
         // Direct .torrent URL
@@ -99,14 +113,20 @@ async fn download_torrent_bytes(
             req = req.header("x-api-key", key);
         }
 
-        let resp = req.send().await
+        let resp = req
+            .send()
+            .await
             .map_err(|e| AppError::bad_request(format!("下载种子文件失败: {e}")))?;
 
         if !resp.status().is_success() && !resp.status().is_redirection() {
-            return Err(AppError::bad_request(format!("下载种子文件失败: HTTP {}", resp.status())));
+            return Err(AppError::bad_request(format!(
+                "下载种子文件失败: HTTP {}",
+                resp.status()
+            )));
         }
 
-        resp.bytes().await
+        resp.bytes()
+            .await
             .map_err(|e| AppError::bad_request(format!("读取种子文件失败: {e}")))
     }
 }
@@ -166,7 +186,10 @@ pub async fn list_clients(State(ctx): State<Arc<AppState>>) -> Result<impl IntoR
     Ok(ok(clients))
 }
 
-pub async fn get_client(State(ctx): State<Arc<AppState>>, Path(id): Path<String>) -> Result<impl IntoResponse, AppError> {
+pub async fn get_client(
+    State(ctx): State<Arc<AppState>>,
+    Path(id): Path<String>,
+) -> Result<impl IntoResponse, AppError> {
     let client = DownloadClientRepo::get_by_id(&ctx.db, &id)
         .await?
         .ok_or_else(|| AppError::not_found("下载客户端不存在"))?;
@@ -354,17 +377,26 @@ pub async fn preview_torrent_files(
     State(ctx): State<Arc<AppState>>,
     Json(body): Json<PreviewTorrentBody>,
 ) -> Result<impl IntoResponse, AppError> {
-    let site = PtSiteRepo::get_by_id(&ctx.db, &body.site_id).await?
+    let site = PtSiteRepo::get_by_id(&ctx.db, &body.site_id)
+        .await?
         .ok_or_else(|| AppError::not_found("站点不存在"))?;
 
     let site_config = tokimo_pt_search::get_site_config(&site.site_id);
-    let is_api = site_config.as_ref().map_or(false, |c| c.site_type == tokimo_pt_search::SiteType::Api);
+    let is_api = site_config
+        .as_ref()
+        .map_or(false, |c| c.site_type == tokimo_pt_search::SiteType::Api);
     let domain = site.domain.as_str();
 
     let (download_url, torrent_id) = if is_api {
-        (format!("{}/api/torrent/genDlToken", domain.trim_end_matches('/')), Some(body.torrent_id.clone()))
+        (
+            format!("{}/api/torrent/genDlToken", domain.trim_end_matches('/')),
+            Some(body.torrent_id.clone()),
+        )
     } else {
-        (format!("{}/download.php?id={}", domain.trim_end_matches('/'), body.torrent_id), None)
+        (
+            format!("{}/download.php?id={}", domain.trim_end_matches('/'), body.torrent_id),
+            None,
+        )
     };
 
     let bytes = download_torrent_bytes(
@@ -372,7 +404,8 @@ pub async fn preview_torrent_files(
         &download_url,
         site.api_key.as_deref(),
         torrent_id.as_deref(),
-    ).await?;
+    )
+    .await?;
 
     let meta = parse_torrent(&bytes).map_err(|e| AppError::bad_request(e))?;
 
@@ -403,7 +436,8 @@ pub async fn resolve_save_path(
     State(ctx): State<Arc<AppState>>,
     Json(body): Json<ResolvePathBody>,
 ) -> Result<impl IntoResponse, AppError> {
-    let client = DownloadClientRepo::get_by_id(&ctx.db, &body.client_id).await?
+    let client = DownloadClientRepo::get_by_id(&ctx.db, &body.client_id)
+        .await?
         .ok_or_else(|| AppError::not_found("下载客户端不存在"))?;
 
     let paths: Vec<(String, String, String)> = client
@@ -442,21 +476,36 @@ pub async fn download_with_filter(
     Json(body): Json<DownloadWithFilterBody>,
 ) -> Result<impl IntoResponse, AppError> {
     // Look up site config
-    let site = PtSiteRepo::get_by_id(&ctx.db, &body.site_id).await?
+    let site = PtSiteRepo::get_by_id(&ctx.db, &body.site_id)
+        .await?
         .ok_or_else(|| AppError::not_found("站点不存在"))?;
 
     let site_config = tokimo_pt_search::get_site_config(&site.site_id);
-    let is_api = site_config.as_ref().map_or(false, |c| c.site_type == tokimo_pt_search::SiteType::Api);
+    let is_api = site_config
+        .as_ref()
+        .map_or(false, |c| c.site_type == tokimo_pt_search::SiteType::Api);
     let domain = site.domain.as_str();
 
     let (download_url, torrent_id) = if is_api {
-        (format!("{}/api/torrent/genDlToken", domain.trim_end_matches('/')), Some(body.torrent_id.clone()))
+        (
+            format!("{}/api/torrent/genDlToken", domain.trim_end_matches('/')),
+            Some(body.torrent_id.clone()),
+        )
     } else {
-        (format!("{}/download.php?id={}", domain.trim_end_matches('/'), body.torrent_id), None)
+        (
+            format!("{}/download.php?id={}", domain.trim_end_matches('/'), body.torrent_id),
+            None,
+        )
     };
 
     // 1. Download .torrent file (handles genDlToken for API sites)
-    let bytes = download_torrent_bytes(&ctx.http_client, &download_url, site.api_key.as_deref(), torrent_id.as_deref()).await?;
+    let bytes = download_torrent_bytes(
+        &ctx.http_client,
+        &download_url,
+        site.api_key.as_deref(),
+        torrent_id.as_deref(),
+    )
+    .await?;
     let meta = parse_torrent(&bytes).map_err(|e| AppError::bad_request(e))?;
 
     // 2. Determine which files to exclude based on episode filter
@@ -478,7 +527,8 @@ pub async fn download_with_filter(
     let save_path = if body.save_path.is_some() {
         body.save_path.clone()
     } else {
-        let client = DownloadClientRepo::get_by_id(&ctx.db, &body.client_id).await?
+        let client = DownloadClientRepo::get_by_id(&ctx.db, &body.client_id)
+            .await?
             .ok_or_else(|| AppError::not_found("下载客户端不存在"))?;
         let paths: Vec<(String, String, String)> = client
             .download_paths
@@ -491,10 +541,7 @@ pub async fn download_with_filter(
 
     // 4. Add torrent to download client (paused if we need to filter files)
     let need_filter = !excluded_indices.is_empty();
-    let torrent_bytes = base64::Engine::encode(
-        &base64::engine::general_purpose::STANDARD_NO_PAD,
-        &bytes,
-    );
+    let torrent_bytes = base64::Engine::encode(&base64::engine::general_purpose::STANDARD_NO_PAD, &bytes);
 
     let options = AddTorrentOptions {
         urls: None,
@@ -514,14 +561,8 @@ pub async fn download_with_filter(
         tokio::time::sleep(std::time::Duration::from_millis(500)).await;
 
         // Find the torrent by name
-        let torrents = DownloadClientService::get_torrents(
-            &ctx.db,
-            &body.client_id,
-            None,
-            None,
-            &ctx.http_client,
-        )
-        .await?;
+        let torrents =
+            DownloadClientService::get_torrents(&ctx.db, &body.client_id, None, None, &ctx.http_client).await?;
 
         let target = torrents.iter().find(|t| t.name == meta.name);
         if let Some(torrent) = target {
@@ -538,13 +579,7 @@ pub async fn download_with_filter(
             .await?;
 
             // Resume the torrent
-            DownloadClientService::resume_torrents(
-                &ctx.db,
-                &body.client_id,
-                &[hash.clone()],
-                &ctx.http_client,
-            )
-            .await?;
+            DownloadClientService::resume_torrents(&ctx.db, &body.client_id, &[hash.clone()], &ctx.http_client).await?;
 
             tracing::info!(
                 "Torrent added with filter: excluded {} of {} files",
@@ -552,7 +587,10 @@ pub async fn download_with_filter(
                 meta.files.len()
             );
         } else {
-            tracing::warn!("Could not find torrent by name '{}', resuming without filter", meta.name);
+            tracing::warn!(
+                "Could not find torrent by name '{}', resuming without filter",
+                meta.name
+            );
             // Can't filter, just resume all
         }
     }

@@ -9,13 +9,13 @@ use std::sync::Arc;
 use tracing::error;
 use uuid::Uuid;
 
+use crate::AppError;
 use crate::AppState;
+use crate::db::ApiDateTimeExt;
+use crate::handlers::{ok, user::AuthUser};
 use crate::subscriptions::repos::subscription_repo::{
     CreateSubscriptionInput, SubscriptionRepo, UpdateSubscriptionInput,
 };
-use crate::db::ApiDateTimeExt;
-use crate::AppError;
-use crate::handlers::{ok, user::AuthUser};
 use tokimo_package_storage::{StorageProvider, UploadOptions};
 
 // ── Log types ────────────────────────────────────────────────────────────────
@@ -464,11 +464,7 @@ pub async fn get_recent_logs(
     ok(logs).into_response()
 }
 
-pub async fn get_raw_logs(
-    State(state): State<Arc<AppState>>,
-    auth: AuthUser,
-    Path(id): Path<String>,
-) -> Response {
+pub async fn get_raw_logs(State(state): State<Arc<AppState>>, auth: AuthUser, Path(id): Path<String>) -> Response {
     match SubscriptionRepo::get_raw(&state.db, &id).await {
         Ok(Some(raw)) => {
             if let Err(e) = check_ownership(raw.created_by.map(|u| u.to_string()).as_deref(), &auth.user_id) {

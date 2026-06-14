@@ -44,8 +44,7 @@ fn fix_urls(result: &mut PtSearchResult, domain: &str, site_id: &str) {
     // Fix detail_url — if site has a template, always use it (API URLs are not human-readable)
     if let Some(template) = config.as_ref().and_then(|c| c.detail_url_template) {
         // Extract ID from current detail_url if it's a full URL
-        let id = extract_id_from_url(&result.detail_url)
-            .or_else(|| Some(result.id.clone()));
+        let id = extract_id_from_url(&result.detail_url).or_else(|| Some(result.id.clone()));
         if let Some(tid) = id {
             result.detail_url = template.replace("{id}", &tid);
         }
@@ -65,10 +64,7 @@ fn fix_urls(result: &mut PtSearchResult, domain: &str, site_id: &str) {
         && !result.download_url.contains('/')
         && !result.download_url.contains('?')
     {
-        let is_api_site = config
-            .as_ref()
-            .map(|c| c.site_type == SiteType::Api)
-            .unwrap_or(false);
+        let is_api_site = config.as_ref().map(|c| c.site_type == SiteType::Api).unwrap_or(false);
 
         let base = domain.trim_end_matches('/');
         if is_api_site {
@@ -95,7 +91,13 @@ fn extract_id_from_url(url: &str) -> Option<String> {
     // Try path segment: /detail/XXX
     if let Some(pos) = url.find("/detail/") {
         let after = &url[pos + 8..];
-        let id = after.split('/').next().unwrap_or(after).split('?').next().unwrap_or(after);
+        let id = after
+            .split('/')
+            .next()
+            .unwrap_or(after)
+            .split('?')
+            .next()
+            .unwrap_or(after);
         if !id.is_empty() {
             return Some(id.to_string());
         }
@@ -138,9 +140,7 @@ pub async fn search_all_sites(
             let (cat_canonical, cat_name, cat_display) = resolve_category(&site.site_id, &result.category);
 
             // Apply category filter (match against canonical ID)
-            if !canonical_filters.is_empty()
-                && !canonical_filters.contains(&cat_canonical)
-            {
+            if !canonical_filters.is_empty() && !canonical_filters.contains(&cat_canonical) {
                 continue;
             }
 
@@ -173,11 +173,7 @@ pub async fn search_all_sites(
     }
 }
 
-async fn search_single_site(
-    http_client: &reqwest::Client,
-    site: &PtSiteDto,
-    keyword: &str,
-) -> Vec<PtSearchResult> {
+async fn search_single_site(http_client: &reqwest::Client, site: &PtSiteDto, keyword: &str) -> Vec<PtSearchResult> {
     let auth = SiteAuth {
         cookies: site.cookies.clone(),
         api_key: site.api_key.clone(),

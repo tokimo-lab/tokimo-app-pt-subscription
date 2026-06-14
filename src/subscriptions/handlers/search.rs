@@ -1,4 +1,8 @@
-use axum::{Json, extract::State, response::{IntoResponse, Response}};
+use axum::{
+    Json,
+    extract::State,
+    response::{IntoResponse, Response},
+};
 use serde::Deserialize;
 use std::sync::Arc;
 
@@ -40,19 +44,10 @@ pub async fn search_pt(
     let sites = if input.site_ids.is_empty() {
         sites
     } else {
-        sites
-            .into_iter()
-            .filter(|s| input.site_ids.contains(&s.id))
-            .collect()
+        sites.into_iter().filter(|s| input.site_ids.contains(&s.id)).collect()
     };
 
-    let response = search_all_sites(
-        &state.http_client,
-        &sites,
-        &keyword,
-        &input.categories,
-    )
-    .await;
+    let response = search_all_sites(&state.http_client, &sites, &keyword, &input.categories).await;
 
     ok(response).into_response()
 }

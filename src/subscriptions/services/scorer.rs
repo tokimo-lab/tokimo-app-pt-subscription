@@ -87,10 +87,7 @@ pub fn should_exclude(torrent: &PtSearchResult, prefs: &FilterPrefs) -> bool {
     if let Some(ref allowed) = prefs.resolutions {
         if let Some(ref res) = torrent.resolution {
             let norm = normalize_resolution(res);
-            if !allowed
-                .iter()
-                .any(|a| normalize_resolution(a) == norm)
-            {
+            if !allowed.iter().any(|a| normalize_resolution(a) == norm) {
                 return true;
             }
         }
@@ -211,11 +208,7 @@ pub fn score_torrent(torrent: &PtSearchResult, prefs: &FilterPrefs) -> f64 {
     score
 }
 
-pub fn rank_torrents(
-    torrents: &[PtSearchResult],
-    prefs: &FilterPrefs,
-    max_count: usize,
-) -> Vec<(usize, f64)> {
+pub fn rank_torrents(torrents: &[PtSearchResult], prefs: &FilterPrefs, max_count: usize) -> Vec<(usize, f64)> {
     let mut scored: Vec<(usize, f64)> = torrents
         .iter()
         .enumerate()

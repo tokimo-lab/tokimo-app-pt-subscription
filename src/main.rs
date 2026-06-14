@@ -12,14 +12,14 @@ mod assets;
 mod cli;
 mod cli_types;
 
-use std::sync::{Arc, OnceLock};
 use std::path::PathBuf;
+use std::sync::{Arc, OnceLock};
 
 use clap::{Parser, Subcommand};
 use cli_types::{ClientsCmd, TorrentsCmd};
+use tokimo_app_pt_subscription::AppState;
 use tokimo_bus_cli::TokimoAuthArgs;
 use tokimo_bus_client::{BusClient, ClientConfig};
-use tokimo_app_pt_subscription::AppState;
 use tracing::{error, info};
 
 fn data_local_path() -> PathBuf {
@@ -103,14 +103,11 @@ async fn run_server() -> anyhow::Result<()> {
     info!("pt-subscription: db connected (schema managed by host)");
 
     let client_slot: Arc<OnceLock<Arc<BusClient>>> = Arc::new(OnceLock::new());
-    let storage_slot: Arc<OnceLock<Arc<dyn tokimo_package_storage::StorageProvider>>> =
-        Arc::new(OnceLock::new());
+    let storage_slot: Arc<OnceLock<Arc<dyn tokimo_package_storage::StorageProvider>>> = Arc::new(OnceLock::new());
     storage_slot
         .set(Arc::new(
-            tokimo_package_storage::OpendalStorageProvider::new(
-                &data_local_path().join("storage"),
-            )
-            .expect("storage init"),
+            tokimo_package_storage::OpendalStorageProvider::new(&data_local_path().join("storage"))
+                .expect("storage init"),
         ))
         .map_err(|_| anyhow::anyhow!("storage_slot already set"))?;
     let http_client = reqwest::Client::builder()
@@ -125,8 +122,8 @@ async fn run_server() -> anyhow::Result<()> {
         active_subscription_runs: Arc::new(std::sync::RwLock::new(std::collections::HashMap::new())),
     });
 
-    let app_socket = app_server::spawn("pt-subscription", Arc::clone(&ctx))
-        .map_err(|e| anyhow::anyhow!("app_server spawn: {e}"))?;
+    let app_socket =
+        app_server::spawn("pt-subscription", Arc::clone(&ctx)).map_err(|e| anyhow::anyhow!("app_server spawn: {e}"))?;
 
     let client = BusClient::builder(cfg)
         .service("pt-subscription", env!("CARGO_PKG_VERSION"))

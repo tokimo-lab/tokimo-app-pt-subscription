@@ -54,11 +54,7 @@ pub fn parse_episodes_from_filename(filename: &str) -> EpisodeInfo {
 
 /// Check if a file should be included based on subscription's season/episode filter.
 /// Returns true if the file matches the filter (should be downloaded).
-pub fn should_include_file(
-    filename: &str,
-    filter_season: Option<i32>,
-    filter_episodes: &[i32],
-) -> bool {
+pub fn should_include_file(filename: &str, filter_season: Option<i32>, filter_episodes: &[i32]) -> bool {
     let info = parse_episodes_from_filename(filename);
 
     // If no filter specified, include everything

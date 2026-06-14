@@ -37,7 +37,7 @@ use tokimo_bus_protocol::{BusListener, DataPlaneSocket};
 use tracing::{error, info};
 
 use crate::assets;
-use tokimo_app_pt_subscription::{handlers, AppState, subscriptions};
+use tokimo_app_pt_subscription::{AppState, handlers, subscriptions};
 
 pub fn spawn(service: &str, ctx: Arc<AppState>) -> anyhow::Result<DataPlaneSocket> {
     let (listener, socket) = BusListener::bind_for_app(service)?;

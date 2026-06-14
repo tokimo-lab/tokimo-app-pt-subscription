@@ -4,8 +4,8 @@ use sea_orm::{JsonValue as Json, *};
 use serde::Serialize;
 use uuid::Uuid;
 
-use crate::db::entities::subscriptions;
 use crate::AppError;
+use crate::db::entities::subscriptions;
 
 // ── DTO ─────────────────────────────────────────────────────────────────────
 
@@ -131,10 +131,7 @@ fn parse_num(s: &str) -> f64 {
     s.parse::<f64>().unwrap_or(0.0)
 }
 
-fn to_dto(
-    model: &subscriptions::Model,
-    created_by_name: Option<String>,
-) -> SubscriptionDto {
+fn to_dto(model: &subscriptions::Model, created_by_name: Option<String>) -> SubscriptionDto {
     SubscriptionDto {
         id: model.id.to_string(),
         media_type: model.media_type.clone(),
@@ -229,7 +226,9 @@ impl SubscriptionRepo {
             sources: Set(input.sources.map(|v| serde_json::to_value(v).unwrap_or_default())),
             resolutions: Set(input.resolutions.map(|v| serde_json::to_value(v).unwrap_or_default())),
             codecs: Set(input.codecs.map(|v| serde_json::to_value(v).unwrap_or_default())),
-            release_groups: Set(input.release_groups.map(|v| serde_json::to_value(v).unwrap_or_default())),
+            release_groups: Set(input
+                .release_groups
+                .map(|v| serde_json::to_value(v).unwrap_or_default())),
             min_size: Set(input.min_size.unwrap_or(0.0).to_string()),
             max_size: Set(input.max_size.unwrap_or(0.0).to_string()),
             min_seeders: Set(input.min_seeders.unwrap_or(0.0).to_string()),

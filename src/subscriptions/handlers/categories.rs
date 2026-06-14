@@ -1,11 +1,14 @@
-use axum::{extract::State, response::{IntoResponse, Response}};
+use axum::{
+    extract::State,
+    response::{IntoResponse, Response},
+};
 use serde::Serialize;
 use std::sync::Arc;
 
+use crate::AppState;
 use crate::handlers::ok;
 use crate::shared::categories::all_categories;
 use crate::shared::filter_options::get_filter_options;
-use crate::AppState;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -19,11 +22,7 @@ pub struct CategoryDto {
 pub async fn list_categories(_state: State<Arc<AppState>>) -> Response {
     let categories: Vec<CategoryDto> = all_categories()
         .into_iter()
-        .map(|(id, en_name, name)| CategoryDto {
-            id,
-            name,
-            en_name,
-        })
+        .map(|(id, en_name, name)| CategoryDto { id, name, en_name })
         .collect();
 
     #[derive(Serialize)]

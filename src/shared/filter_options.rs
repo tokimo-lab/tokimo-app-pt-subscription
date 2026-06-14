@@ -41,4 +41,3 @@ pub fn resolve_download_path(
     }
     None
 }
-
