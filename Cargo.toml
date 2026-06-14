@@ -34,7 +34,7 @@ tokimo-package-client-api = { git = "https://github.com/tokimo-lab/tokimo-packag
 tokimo-package-utils      = { git = "https://github.com/tokimo-lab/tokimo-package-utils.git", rev = "b1edb7b" }
 
 # PT 搜索（crate name: tokimo_pt_search）
-tokimo_pt_search = { package = "tokimo-package-pt-search", git = "https://github.com/tokimo-lab/tokimo-package-pt-search.git", rev = "7f62709" }
+tokimo_pt_search = { package = "tokimo-package-pt-search", git = "https://github.com/tokimo-lab/tokimo-package-pt-search.git", rev = "b1be9db" }
 
 # HTTP 客户端（用于连接下载工具）
 reqwest = { version = "0.13", default-features = false, features = ["json", "rustls"] }
