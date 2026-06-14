@@ -1,0 +1,38 @@
+# Tokimo app manifest（供主 server 读取，注册 / spawn / 资源代理 / launchpad 展示）
+[app]
+id          = "pt-subscription"
+display     = "PT追剧助手"
+version     = "0.1.0"
+description = "PT 追剧全流程：订阅 + 下载器 + PT 站点 + 剧集搜索"
+
+[runtime]
+lifecycle    = "resident"            # resident | on_demand | one_shot
+binary       = "tokimo-app-pt-subscription"  # 不含 .exe 后缀；server 自动按平台拼接
+ui_dist      = "ui/dist"             # 相对 install 目录；用作 TOKIMO_APP_ASSETS_DIR
+
+[ui]
+# 浏览器侧 dynamic import 的相对 URL（相对 assets/，以 "/api/apps/<id>/assets/" 为根）
+entry        = "assets/index.js"
+# 窗口类型路由键（shell WINDOW_REGISTRY key）；通常 = app id
+window_type  = "pt-subscription"
+# launchpad 类别：app（自治窗口） / page（DB 驱动页面） / system / popup
+category     = "app"
+# 可选 Lucide 图标名；image 优先级更高
+icon         = "Download"
+# 可选图片图标：相对路径会被 shell 重写为 /api/apps/<id>/assets/<path>
+image        = "icon.png"
+# 品牌色
+color        = "#3b82f6"
+# 默认窗口尺寸
+width        = 1080
+height       = 660
+
+
+[cli]
+name        = "tokimo-app-pt-subscription"
+description = "PT subscription manager — subscriptions, download clients, PT sites, and episode search."
+
+[database]
+schema         = "pt_subscription"
+migrations_dir = "migrations"
+driver         = "postgres"

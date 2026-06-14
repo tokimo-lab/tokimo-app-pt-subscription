@@ -1,0 +1,81 @@
+[package]
+name        = "tokimo-app-pt-subscription"
+version     = "0.1.0"
+edition     = "2024"
+rust-version = "1.94.0"
+license     = "MIT OR Apache-2.0"
+description = "PT 追剧助手 — 订阅 + 下载器 + PT 站点 + 剧集搜索"
+
+[dependencies]
+tokimo-bus-client   = { git = "https://github.com/tokimo-lab/tokimo-bus.git", rev = "80063cb4391c5249df9cd3b570b1eabed64c3843" }
+tokimo-bus-protocol = { git = "https://github.com/tokimo-lab/tokimo-bus.git", rev = "80063cb4391c5249df9cd3b570b1eabed64c3843", features = ["axum"] }
+tokimo-bus-auth     = { git = "https://github.com/tokimo-lab/tokimo-bus.git", rev = "80063cb4391c5249df9cd3b570b1eabed64c3843", features = ["axum", "cli-db"] }
+tokimo-bus-cli      = { git = "https://github.com/tokimo-lab/tokimo-bus.git", rev = "80063cb4391c5249df9cd3b570b1eabed64c3843" }
+
+clap              = { version = "4", features = ["derive", "env"] }
+tokio              = { version = "1", features = ["rt-multi-thread", "macros", "time", "signal"] }
+tracing            = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+serde              = { version = "1", features = ["derive"] }
+serde_json         = "1"
+serde_with         = "3"
+uuid               = { version = "1", features = ["v4", "serde"] }
+chrono             = { version = "0.4", features = ["serde"] }
+sea-orm            = { version = "2.0.0-rc.38", default-features = false, features = ["sqlx-postgres", "runtime-tokio-rustls", "with-uuid", "with-chrono", "with-json", "macros"] }
+rust-embed         = { version = "8", features = ["debug-embed"] }
+mime_guess         = "2"
+anyhow             = "1"
+base64             = "0.22"
+axum = { version = "0.8", features = ["json"] }
+ts-rs = { version = "12", features = ["serde-json-impl"] }
+
+# 下载客户端实现
+tokimo-package-client-api = { git = "https://github.com/tokimo-lab/tokimo-package-client-api.git", rev = "200102b" }
+tokimo-package-utils      = { git = "https://github.com/tokimo-lab/tokimo-package-utils.git", rev = "b1edb7b" }
+
+# PT 搜索（crate name: tokimo_pt_search）
+tokimo_pt_search = { package = "tokimo-package-pt-search", git = "https://github.com/tokimo-lab/tokimo-package-pt-search.git", rev = "7f62709" }
+
+# HTTP 客户端（用于连接下载工具）
+reqwest = { version = "0.13", default-features = false, features = ["json", "rustls"] }
+
+# 异步工具
+futures-util = "0.3"
+
+# 补充依赖（subscription handlers 需要）
+async-trait = "0.1"
+bytes       = "1"
+
+# Storage
+tokimo-package-storage = { git = "https://github.com/tokimo-lab/tokimo-package-storage.git", rev = "db9dff2" }
+
+[lints.rust]
+unsafe_code     = "warn"
+unused_must_use = "deny"
+
+[lints.clippy]
+all      = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+wildcard_imports        = "allow"
+module_name_repetitions = "allow"
+must_use_candidate      = "allow"
+missing_errors_doc      = "allow"
+missing_panics_doc      = "allow"
+items_after_statements  = "allow"
+struct_excessive_bools  = "allow"
+similar_names           = "allow"
+many_single_char_names  = "allow"
+doc_markdown            = "allow"
+ref_option              = "allow"
+fn_params_excessive_bools = "allow"
+needless_pass_by_value  = "allow"
+cast_possible_wrap      = "allow"
+cast_possible_truncation = "allow"
+cast_precision_loss     = "allow"
+cast_sign_loss          = "allow"
+unwrap_in_result = "warn"
+panic            = "warn"
+todo             = "warn"
+dbg_macro        = "warn"
+print_stdout     = "warn"
+print_stderr     = "warn"
