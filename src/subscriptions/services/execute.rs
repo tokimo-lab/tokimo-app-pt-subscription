@@ -30,10 +30,11 @@ fn build_search_keywords(sub: &subscriptions::Model) -> Vec<String> {
         return vec![kw];
     }
     let season_num: i32 = sub.season.as_ref().and_then(|s| s.parse().ok()).unwrap_or(1);
-    let season_str = format!("S{:02}", season_num);
+    let season_str = format!("S{season_num:02}");
     vec![format!("{title} {season_str}")]
 }
 
+#[allow(clippy::too_many_lines)]
 pub async fn execute_subscription(state: &Arc<AppState>, sub_id: &str) -> bool {
     let storage = Arc::clone(state.storage());
 
@@ -361,8 +362,7 @@ pub async fn execute_subscription(state: &Arc<AppState>, sub_id: &str) -> bool {
             sites
                 .iter()
                 .find(|s| s.id == *best_site_id)
-                .map(|s| s.domain.trim_end_matches('/'))
-                .unwrap_or("https://api.m-team.cc")
+                .map_or("https://api.m-team.cc", |s| s.domain.trim_end_matches('/'))
         );
 
         let form_data = format!("id={}", best.id);
@@ -390,146 +390,7 @@ pub async fn execute_subscription(state: &Arc<AppState>, sub_id: &str) -> bool {
                             // Get the download URL from response
                             let token_url = json.get("data").and_then(|d| d.as_str()).unwrap_or("");
 
-                            if !token_url.is_empty() {
-                                // Download the torrent file (needs UA + follow redirects for dlv2)
-                                let dl_client = reqwest::Client::builder()
-                                    .redirect(reqwest::redirect::Policy::limited(5))
-                                    .timeout(std::time::Duration::from_secs(30))
-                                    .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-                                    .build()
-                                    .unwrap_or_else(|_| state.http_client.clone());
-                                match dl_client.get(token_url).send().await {
-                                    Ok(torrent_resp) => {
-                                        if torrent_resp.status().is_success() {
-                                            match torrent_resp.bytes().await {
-                                                Ok(bytes) => {
-                                                    use base64::Engine;
-                                                    let b64 =
-                                                        base64::engine::general_purpose::STANDARD_NO_PAD.encode(&bytes);
-                                                    sub_handler::append_log(
-                                                        &storage,
-                                                        sub_id,
-                                                        &run_id,
-                                                        "downloading",
-                                                        &format!("种子文件下载成功，大小: {} bytes", bytes.len()),
-                                                        None,
-                                                    )
-                                                    .await;
-
-                                                    // Parse torrent to get file list for episode filtering
-                                                    let excluded_indices = match parse_torrent(&bytes) {
-                                                        Ok(meta) => {
-                                                            let filter_season =
-                                                                sub.season.as_ref().and_then(|s| s.parse::<i32>().ok());
-                                                            let filter_episodes: Vec<i32> = sub
-                                                                .episodes
-                                                                .as_ref()
-                                                                .and_then(|e| {
-                                                                    serde_json::from_value::<Vec<i32>>(e.clone()).ok()
-                                                                })
-                                                                .unwrap_or_default();
-                                                            let has_filter =
-                                                                filter_season.is_some() || !filter_episodes.is_empty();
-
-                                                            if has_filter {
-                                                                let excluded: Vec<u32> = meta
-                                                                    .files
-                                                                    .iter()
-                                                                    .filter(|f| {
-                                                                        !should_include_file(
-                                                                            &f.path,
-                                                                            filter_season,
-                                                                            &filter_episodes,
-                                                                        )
-                                                                    })
-                                                                    .map(|f| f.index as u32)
-                                                                    .collect();
-
-                                                                if !excluded.is_empty() {
-                                                                    sub_handler::append_log(
-                                                                        &storage,
-                                                                        sub_id,
-                                                                        &run_id,
-                                                                        "downloading",
-                                                                        &format!(
-                                                                            "集数过滤: 共 {} 个文件，排除 {} 个",
-                                                                            meta.files.len(),
-                                                                            excluded.len()
-                                                                        ),
-                                                                        None,
-                                                                    )
-                                                                    .await;
-                                                                }
-                                                                excluded
-                                                            } else {
-                                                                vec![]
-                                                            }
-                                                        }
-                                                        Err(e) => {
-                                                            sub_handler::append_log(
-                                                                &storage,
-                                                                sub_id,
-                                                                &run_id,
-                                                                "downloading",
-                                                                &format!("解析种子文件失败，跳过集数过滤: {e}"),
-                                                                None,
-                                                            )
-                                                            .await;
-                                                            vec![]
-                                                        }
-                                                    };
-
-                                                    let need_filter = !excluded_indices.is_empty();
-                                                    AddTorrentOptions {
-                                                        urls: None,
-                                                        torrents: Some(vec![b64]),
-                                                        save_path: save_path.clone(),
-                                                        category: sub.category.clone(),
-                                                        tags: Some(vec!["tokimo-subscription".into()]),
-                                                        paused: if need_filter { Some(true) } else { Some(false) },
-                                                        skip_hash_check: None,
-                                                    }
-                                                }
-                                                Err(e) => {
-                                                    sub_handler::append_log(
-                                                        &storage,
-                                                        sub_id,
-                                                        &run_id,
-                                                        "error",
-                                                        &format!("读取种子文件失败: {e}"),
-                                                        None,
-                                                    )
-                                                    .await;
-                                                    return false;
-                                                }
-                                            }
-                                        } else {
-                                            sub_handler::append_log(
-                                                &storage,
-                                                sub_id,
-                                                &run_id,
-                                                "error",
-                                                &format!("下载种子文件失败: HTTP {}", torrent_resp.status()),
-                                                None,
-                                            )
-                                            .await;
-                                            return false;
-                                        }
-                                    }
-                                    Err(e) => {
-                                        sub_handler::append_log(
-                                            &storage,
-                                            sub_id,
-                                            &run_id,
-                                            "error",
-                                            &format!("下载种子文件请求失败: {e}"),
-                                            None,
-                                        )
-                                        .await;
-                                        return false;
-                                    }
-                                }
-                            } else {
+                            if token_url.is_empty() {
                                 sub_handler::append_log(
                                     &storage,
                                     sub_id,
@@ -540,6 +401,144 @@ pub async fn execute_subscription(state: &Arc<AppState>, sub_id: &str) -> bool {
                                 )
                                 .await;
                                 return false;
+                            }
+                            // Download the torrent file (needs UA + follow redirects for dlv2)
+                            let dl_client = reqwest::Client::builder()
+                                .redirect(reqwest::redirect::Policy::limited(5))
+                                .timeout(std::time::Duration::from_secs(30))
+                                .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+                                .build()
+                                .unwrap_or_else(|_| state.http_client.clone());
+                            match dl_client.get(token_url).send().await {
+                                Ok(torrent_resp) => {
+                                    if torrent_resp.status().is_success() {
+                                        match torrent_resp.bytes().await {
+                                            Ok(bytes) => {
+                                                use base64::Engine;
+                                                let b64 =
+                                                    base64::engine::general_purpose::STANDARD_NO_PAD.encode(&bytes);
+                                                sub_handler::append_log(
+                                                    &storage,
+                                                    sub_id,
+                                                    &run_id,
+                                                    "downloading",
+                                                    &format!("种子文件下载成功，大小: {} bytes", bytes.len()),
+                                                    None,
+                                                )
+                                                .await;
+
+                                                // Parse torrent to get file list for episode filtering
+                                                let excluded_indices = match parse_torrent(&bytes) {
+                                                    Ok(meta) => {
+                                                        let filter_season =
+                                                            sub.season.as_ref().and_then(|s| s.parse::<i32>().ok());
+                                                        let filter_episodes: Vec<i32> = sub
+                                                            .episodes
+                                                            .as_ref()
+                                                            .and_then(|e| {
+                                                                serde_json::from_value::<Vec<i32>>(e.clone()).ok()
+                                                            })
+                                                            .unwrap_or_default();
+                                                        let has_filter =
+                                                            filter_season.is_some() || !filter_episodes.is_empty();
+
+                                                        if has_filter {
+                                                            let excluded: Vec<u32> = meta
+                                                                .files
+                                                                .iter()
+                                                                .filter(|f| {
+                                                                    !should_include_file(
+                                                                        &f.path,
+                                                                        filter_season,
+                                                                        &filter_episodes,
+                                                                    )
+                                                                })
+                                                                .map(|f| f.index as u32)
+                                                                .collect();
+
+                                                            if !excluded.is_empty() {
+                                                                sub_handler::append_log(
+                                                                    &storage,
+                                                                    sub_id,
+                                                                    &run_id,
+                                                                    "downloading",
+                                                                    &format!(
+                                                                        "集数过滤: 共 {} 个文件，排除 {} 个",
+                                                                        meta.files.len(),
+                                                                        excluded.len()
+                                                                    ),
+                                                                    None,
+                                                                )
+                                                                .await;
+                                                            }
+                                                            excluded
+                                                        } else {
+                                                            vec![]
+                                                        }
+                                                    }
+                                                    Err(e) => {
+                                                        sub_handler::append_log(
+                                                            &storage,
+                                                            sub_id,
+                                                            &run_id,
+                                                            "downloading",
+                                                            &format!("解析种子文件失败，跳过集数过滤: {e}"),
+                                                            None,
+                                                        )
+                                                        .await;
+                                                        vec![]
+                                                    }
+                                                };
+
+                                                let need_filter = !excluded_indices.is_empty();
+                                                AddTorrentOptions {
+                                                    urls: None,
+                                                    torrents: Some(vec![b64]),
+                                                    save_path: save_path.clone(),
+                                                    category: sub.category.clone(),
+                                                    tags: Some(vec!["tokimo-subscription".into()]),
+                                                    paused: if need_filter { Some(true) } else { Some(false) },
+                                                    skip_hash_check: None,
+                                                }
+                                            }
+                                            Err(e) => {
+                                                sub_handler::append_log(
+                                                    &storage,
+                                                    sub_id,
+                                                    &run_id,
+                                                    "error",
+                                                    &format!("读取种子文件失败: {e}"),
+                                                    None,
+                                                )
+                                                .await;
+                                                return false;
+                                            }
+                                        }
+                                    } else {
+                                        sub_handler::append_log(
+                                            &storage,
+                                            sub_id,
+                                            &run_id,
+                                            "error",
+                                            &format!("下载种子文件失败: HTTP {}", torrent_resp.status()),
+                                            None,
+                                        )
+                                        .await;
+                                        return false;
+                                    }
+                                }
+                                Err(e) => {
+                                    sub_handler::append_log(
+                                        &storage,
+                                        sub_id,
+                                        &run_id,
+                                        "error",
+                                        &format!("下载种子文件请求失败: {e}"),
+                                        None,
+                                    )
+                                    .await;
+                                    return false;
+                                }
                             }
                         }
                         Err(e) => {
@@ -632,10 +631,10 @@ async fn get_search_sites(
         .as_ref()
         .and_then(|v| serde_json::from_value(v.clone()).ok());
 
-    if let Some(ref ids) = site_ids {
-        if !ids.is_empty() {
-            return Ok(all_sites.into_iter().filter(|s| ids.contains(&s.id)).collect());
-        }
+    if let Some(ref ids) = site_ids
+        && !ids.is_empty()
+    {
+        return Ok(all_sites.into_iter().filter(|s| ids.contains(&s.id)).collect());
     }
     Ok(all_sites)
 }

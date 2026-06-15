@@ -373,9 +373,9 @@ impl SubscriptionRepo {
     ) -> Result<EpisodeProgress, AppError> {
         let stmt = Statement::from_sql_and_values(
             DbBackend::Postgres,
-            r#"SELECT app_metadata FROM download_records
+            r"SELECT app_metadata FROM download_records
                WHERE app_metadata->>'subscriptionId' = $1
-                 AND status != 'failed'"#,
+                 AND status != 'failed'",
             [subscription_id.into()],
         );
 

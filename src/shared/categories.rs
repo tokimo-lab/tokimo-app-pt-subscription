@@ -125,32 +125,10 @@ impl Category {
 pub fn map_site_category(site_id: &str, raw_category: &str) -> Option<Category> {
     match site_id {
         "m-team" => mteam_category(raw_category),
-        "hdfans" => nexus_category(raw_category),
-        "hdsky" => nexus_category(raw_category),
-        "audiences" => nexus_category(raw_category),
-        "azusa" => nexus_category(raw_category),
-        "btschool" => nexus_category(raw_category),
-        "chdbits" => nexus_category(raw_category),
-        "hddolby" => nexus_category(raw_category),
-        "HDHome" => nexus_category(raw_category),
-        "hhan" => nexus_category(raw_category),
-        "keepfrds" => nexus_category(raw_category),
-        "ourbits" => nexus_category(raw_category),
-        "pterclub" => nexus_category(raw_category),
-        "ptsbao" => nexus_category(raw_category),
-        "putao" => nexus_category(raw_category),
-        "ssd" => nexus_category(raw_category),
-        "ultrahd" => nexus_category(raw_category),
-        "tjupt" => nexus_category(raw_category),
-        "ttg" => nexus_category(raw_category),
-        "hares" => nexus_category(raw_category),
-        "hdatmos" => nexus_category(raw_category),
-        "agsv" => nexus_category(raw_category),
-        "filelist" => nexus_category(raw_category),
-        "iptorrents" => nexus_category(raw_category),
-        "exoticaz" => nexus_category(raw_category),
-        "acgrip" => Some(Category::Anime),
-        "mikanani" => Some(Category::Anime),
+        "hdfans" | "hdsky" | "audiences" | "azusa" | "btschool" | "chdbits" | "hddolby" | "HDHome" | "hhan"
+        | "keepfrds" | "ourbits" | "pterclub" | "ptsbao" | "putao" | "ssd" | "ultrahd" | "tjupt" | "ttg" | "hares"
+        | "hdatmos" | "agsv" | "filelist" | "iptorrents" | "exoticaz" => nexus_category(raw_category),
+        "acgrip" | "mikanani" => Some(Category::Anime),
         "sukebei" => sukebei_category(raw_category),
         _ => None,
     }
@@ -165,15 +143,13 @@ fn mteam_category(raw: &str) -> Option<Category> {
         "404" | "441" => Some(Category::Documentary),
         "406" | "429" => Some(Category::Variety),
         "407" | "425" | "439" => Some(Category::Sports),
-        "408" | "435" => Some(Category::Music),
-        "430" | "434" | "443" => Some(Category::Music),
+        "408" | "430" | "434" | "435" | "443" => Some(Category::Music),
         "426" | "427" => Some(Category::Ebook),
         "428" | "437" | "442" => Some(Category::Audiobook),
         "423" | "431" => Some(Category::Software),
         "432" => Some(Category::Game),
         "420" | "438" => Some(Category::Course),
-        "421" => Some(Category::Other),
-        "409" | "436" => Some(Category::Other),
+        "421" | "409" | "436" => Some(Category::Other),
         _ => None,
     }
 }
@@ -213,6 +189,7 @@ fn nexus_category(raw: &str) -> Option<Category> {
 }
 
 /// Sukebei (adult) category mapping
+#[allow(clippy::unnecessary_wraps)]
 fn sukebei_category(raw: &str) -> Option<Category> {
     match raw {
         "4" | "15" | "16" | "17" => Some(Category::Movie),
@@ -261,9 +238,7 @@ pub fn resolve_from_str(s: &str) -> Option<Category> {
 /// Normalize category string to English en_name for path lookup.
 /// Accepts: English name ("music"), Chinese name ("音乐"), or canonical ID ("7").
 pub fn category_to_en_name(s: &str) -> String {
-    resolve_from_str(s)
-        .map(|c| c.en_name().to_string())
-        .unwrap_or_else(|| s.to_string())
+    resolve_from_str(s).map_or_else(|| s.to_string(), |c| c.en_name().to_string())
 }
 
 /// Get all category names for display.

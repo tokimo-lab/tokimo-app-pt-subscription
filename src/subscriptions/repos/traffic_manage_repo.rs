@@ -120,15 +120,17 @@ const PT_DOWNLOADER_TYPE: &str = "pt-qbittorrent";
 pub struct TrafficManageRepo;
 
 impl TrafficManageRepo {
+    #[allow(clippy::unused_async)]
     pub async fn get_settings<C: ConnectionTrait>(db: &C) -> Result<TrafficManageSettings, AppError> {
-        SystemConfigRepo::get::<TrafficManageSettings>(db).await
+        SystemConfigRepo::get::<TrafficManageSettings>(db)
     }
 
+    #[allow(clippy::unused_async)]
     pub async fn upsert_settings<C: ConnectionTrait>(
         db: &C,
         input: UpdateTrafficSettingsInput,
     ) -> Result<TrafficManageSettings, AppError> {
-        let mut settings = SystemConfigRepo::get::<TrafficManageSettings>(db).await?;
+        let mut settings = SystemConfigRepo::get::<TrafficManageSettings>(db)?;
 
         if let Some(v) = input.download_path {
             settings.download_path = v;
@@ -158,7 +160,7 @@ impl TrafficManageRepo {
             settings.is_enabled = v;
         }
 
-        SystemConfigRepo::set(db, &settings).await?;
+        SystemConfigRepo::set(db, &settings)?;
         Ok(settings)
     }
 

@@ -34,10 +34,10 @@ pub fn resolve_download_path(
         return Some(path.clone());
     }
     // 2. Fallback to global + category
-    if let Some((_, global_path, _)) = download_paths.iter().find(|(t, _, _)| t == "global") {
-        if !global_path.is_empty() {
-            return Some(format!("{}/{}", global_path.trim_end_matches('/'), category));
-        }
+    if let Some((_, global_path, _)) = download_paths.iter().find(|(t, _, _)| t == "global")
+        && !global_path.is_empty()
+    {
+        return Some(format!("{}/{}", global_path.trim_end_matches('/'), category));
     }
     None
 }

@@ -11,7 +11,6 @@ use uuid::Uuid;
 
 use crate::AppError;
 use crate::AppState;
-use crate::db::ApiDateTimeExt;
 use crate::handlers::{ok, user::AuthUser};
 use crate::subscriptions::repos::subscription_repo::{
     CreateSubscriptionInput, SubscriptionRepo, UpdateSubscriptionInput,
@@ -164,14 +163,14 @@ async fn get_run_summaries(
             .find(|e| e.phase == "search_result")
             .and_then(|e| e.details.as_ref())
             .and_then(|d| d.get("count"))
-            .and_then(|v| v.as_i64())
+            .and_then(serde_json::Value::as_i64)
             .unwrap_or(0);
         let after_filter = entries
             .iter()
             .find(|e| e.phase == "filter_result")
             .and_then(|e| e.details.as_ref())
             .and_then(|d| d.get("count"))
-            .and_then(|v| v.as_i64())
+            .and_then(serde_json::Value::as_i64)
             .unwrap_or(0);
 
         summaries.push(SubscriptionRunSummary {
@@ -340,7 +339,7 @@ pub async fn execute(State(state): State<Arc<AppState>>, auth: AuthUser, Path(id
         }
         Ok(None) => return AppError::NotFound("订阅不存在".into()).into_response(),
         Err(e) => return e.into_response(),
-    };
+    }
 
     let run_id = Uuid::new_v4().to_string();
     let sub_id = id.clone();

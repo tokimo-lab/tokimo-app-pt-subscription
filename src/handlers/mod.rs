@@ -61,7 +61,7 @@ async fn download_torrent_bytes(
 
         let status = resp.status();
         if !status.is_success() && !status.is_redirection() {
-            return Err(AppError::bad_request(format!("genDlToken 失败: HTTP {}", status)));
+            return Err(AppError::bad_request(format!("genDlToken 失败: HTTP {status}")));
         }
 
         let json: serde_json::Value = resp
@@ -384,7 +384,7 @@ pub async fn preview_torrent_files(
     let site_config = tokimo_pt_search::get_site_config(&site.site_id);
     let is_api = site_config
         .as_ref()
-        .map_or(false, |c| c.site_type == tokimo_pt_search::SiteType::Api);
+        .is_some_and(|c| c.site_type == tokimo_pt_search::SiteType::Api);
     let domain = site.domain.as_str();
 
     let (download_url, torrent_id) = if is_api {
@@ -407,7 +407,7 @@ pub async fn preview_torrent_files(
     )
     .await?;
 
-    let meta = parse_torrent(&bytes).map_err(|e| AppError::bad_request(e))?;
+    let meta = parse_torrent(&bytes).map_err(AppError::bad_request)?;
 
     let files: Vec<PreviewFileItem> = meta
         .files
@@ -471,6 +471,7 @@ pub struct DownloadWithFilterBody {
     pub episodes: Option<Vec<i32>>,
 }
 
+#[allow(clippy::too_many_lines)]
 pub async fn download_with_filter(
     State(ctx): State<Arc<AppState>>,
     Json(body): Json<DownloadWithFilterBody>,
@@ -483,7 +484,7 @@ pub async fn download_with_filter(
     let site_config = tokimo_pt_search::get_site_config(&site.site_id);
     let is_api = site_config
         .as_ref()
-        .map_or(false, |c| c.site_type == tokimo_pt_search::SiteType::Api);
+        .is_some_and(|c| c.site_type == tokimo_pt_search::SiteType::Api);
     let domain = site.domain.as_str();
 
     let (download_url, torrent_id) = if is_api {
@@ -506,7 +507,7 @@ pub async fn download_with_filter(
         torrent_id.as_deref(),
     )
     .await?;
-    let meta = parse_torrent(&bytes).map_err(|e| AppError::bad_request(e))?;
+    let meta = parse_torrent(&bytes).map_err(AppError::bad_request)?;
 
     // 2. Determine which files to exclude based on episode filter
     let filter_season = body.season;
@@ -579,7 +580,13 @@ pub async fn download_with_filter(
             .await?;
 
             // Resume the torrent
-            DownloadClientService::resume_torrents(&ctx.db, &body.client_id, &[hash.clone()], &ctx.http_client).await?;
+            DownloadClientService::resume_torrents(
+                &ctx.db,
+                &body.client_id,
+                std::slice::from_ref(hash),
+                &ctx.http_client,
+            )
+            .await?;
 
             tracing::info!(
                 "Torrent added with filter: excluded {} of {} files",

@@ -23,9 +23,7 @@ use tokimo_bus_client::{BusClient, ClientConfig};
 use tracing::{error, info};
 
 fn data_local_path() -> PathBuf {
-    std::env::var("DATA_LOCAL_PATH")
-        .map(PathBuf::from)
-        .unwrap_or_else(|_| PathBuf::from("./.data/local"))
+    std::env::var("DATA_LOCAL_PATH").map_or_else(|_| PathBuf::from("./.data/local"), PathBuf::from)
 }
 
 // ── CLI ───────────────────────────────────────────────────────────────────────

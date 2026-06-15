@@ -12,11 +12,11 @@ pub trait SystemConfigSection: Serialize + DeserializeOwned {
 pub struct SystemConfigRepo;
 
 impl SystemConfigRepo {
-    pub async fn get<T: SystemConfigSection>(_db: &impl ConnectionTrait) -> Result<T, AppError> {
+    pub fn get<T: SystemConfigSection>(_db: &impl ConnectionTrait) -> Result<T, AppError> {
         Ok(T::default_value())
     }
 
-    pub async fn set<T: SystemConfigSection>(_db: &impl ConnectionTrait, _settings: &T) -> Result<(), AppError> {
+    pub fn set<T: SystemConfigSection>(_db: &impl ConnectionTrait, _settings: &T) -> Result<(), AppError> {
         Ok(())
     }
 }

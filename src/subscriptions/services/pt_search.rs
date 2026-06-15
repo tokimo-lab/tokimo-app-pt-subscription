@@ -64,11 +64,11 @@ fn fix_urls(result: &mut PtSearchResult, domain: &str, site_id: &str) {
         && !result.download_url.contains('/')
         && !result.download_url.contains('?')
     {
-        let is_api_site = config.as_ref().map(|c| c.site_type == SiteType::Api).unwrap_or(false);
+        let is_api_site = config.as_ref().is_some_and(|c| c.site_type == SiteType::Api);
 
         let base = domain.trim_end_matches('/');
         if is_api_site {
-            result.download_url = format!("{}/api/torrent/genDlToken", base);
+            result.download_url = format!("{base}/api/torrent/genDlToken");
         } else {
             result.download_url = format!("{}/download.php?id={}", base, result.download_url);
         }
@@ -164,7 +164,7 @@ pub async fn search_all_sites(
     let total = all_results.len();
 
     // Sort by seeders descending
-    all_results.sort_by(|a, b| b.result.seeders.cmp(&a.result.seeders));
+    all_results.sort_by_key(|a| std::cmp::Reverse(a.result.seeders));
 
     PtSearchResponse {
         results: all_results,

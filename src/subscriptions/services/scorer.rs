@@ -74,32 +74,32 @@ pub fn should_exclude(torrent: &PtSearchResult, prefs: &FilterPrefs) -> bool {
     }
 
     // sources filter
-    if let Some(ref allowed) = prefs.sources {
-        if let Some(ref src) = torrent.source {
-            let lower = src.to_lowercase();
-            if !allowed.iter().any(|a| lower.contains(&a.to_lowercase())) {
-                return true;
-            }
+    if let Some(ref allowed) = prefs.sources
+        && let Some(ref src) = torrent.source
+    {
+        let lower = src.to_lowercase();
+        if !allowed.iter().any(|a| lower.contains(&a.to_lowercase())) {
+            return true;
         }
     }
 
     // resolutions filter
-    if let Some(ref allowed) = prefs.resolutions {
-        if let Some(ref res) = torrent.resolution {
-            let norm = normalize_resolution(res);
-            if !allowed.iter().any(|a| normalize_resolution(a) == norm) {
-                return true;
-            }
+    if let Some(ref allowed) = prefs.resolutions
+        && let Some(ref res) = torrent.resolution
+    {
+        let norm = normalize_resolution(res);
+        if !allowed.iter().any(|a| normalize_resolution(a) == norm) {
+            return true;
         }
     }
 
     // codecs filter
-    if let Some(ref allowed) = prefs.codecs {
-        if let Some(ref codec) = torrent.video_codec {
-            let lower = codec.to_lowercase();
-            if !allowed.iter().any(|a| a.to_lowercase() == lower) {
-                return true;
-            }
+    if let Some(ref allowed) = prefs.codecs
+        && let Some(ref codec) = torrent.video_codec
+    {
+        let lower = codec.to_lowercase();
+        if !allowed.iter().any(|a| a.to_lowercase() == lower) {
+            return true;
         }
     }
 
@@ -113,7 +113,7 @@ pub fn should_exclude(torrent: &PtSearchResult, prefs: &FilterPrefs) -> bool {
     }
 
     // seeders range
-    let seeders = torrent.seeders as f64;
+    let seeders = f64::from(torrent.seeders);
     if prefs.min_seeders > 0.0 && seeders < prefs.min_seeders {
         return true;
     }
@@ -145,45 +145,45 @@ pub fn score_torrent(torrent: &PtSearchResult, prefs: &FilterPrefs) -> f64 {
         Some("480p") => 5.0,
         _ => 10.0,
     };
-    if let Some(ref allowed) = prefs.resolutions {
-        if let Some(ref res) = torrent.resolution {
-            let norm = normalize_resolution(res);
-            if allowed.iter().any(|a| normalize_resolution(a) == norm) {
-                score += 10.0;
-            }
+    if let Some(ref allowed) = prefs.resolutions
+        && let Some(ref res) = torrent.resolution
+    {
+        let norm = normalize_resolution(res);
+        if allowed.iter().any(|a| normalize_resolution(a) == norm) {
+            score += 10.0;
         }
     }
 
     // ── Video codec ──
     score += match torrent.video_codec.as_deref() {
-        Some("HEVC") | Some("H.265") => 25.0,
-        Some("H.264") | Some("AVC") => 18.0,
+        Some("HEVC" | "H.265") => 25.0,
+        Some("H.264" | "AVC") => 18.0,
         Some("AV1") => 20.0,
         _ => 10.0,
     };
-    if let Some(ref allowed) = prefs.codecs {
-        if let Some(ref codec) = torrent.video_codec {
-            let lower = codec.to_lowercase();
-            if allowed.iter().any(|a| a.to_lowercase() == lower) {
-                score += 10.0;
-            }
+    if let Some(ref allowed) = prefs.codecs
+        && let Some(ref codec) = torrent.video_codec
+    {
+        let lower = codec.to_lowercase();
+        if allowed.iter().any(|a| a.to_lowercase() == lower) {
+            score += 10.0;
         }
     }
 
     // ── Source ──
     score += match torrent.source.as_deref() {
-        Some("BluRay") | Some("REMUX") => 15.0,
-        Some("WEB-DL") | Some("WEBDL") => 12.0,
+        Some("BluRay" | "REMUX") => 15.0,
+        Some("WEB-DL" | "WEBDL") => 12.0,
         Some("WEBRip") => 10.0,
         Some("HDTV") => 5.0,
         _ => 8.0,
     };
-    if let Some(ref allowed) = prefs.sources {
-        if let Some(ref src) = torrent.source {
-            let lower = src.to_lowercase();
-            if allowed.iter().any(|a| lower.contains(&a.to_lowercase())) {
-                score += 5.0;
-            }
+    if let Some(ref allowed) = prefs.sources
+        && let Some(ref src) = torrent.source
+    {
+        let lower = src.to_lowercase();
+        if allowed.iter().any(|a| lower.contains(&a.to_lowercase())) {
+            score += 5.0;
         }
     }
 

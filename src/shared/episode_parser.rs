@@ -21,30 +21,30 @@ pub fn parse_episodes_from_filename(filename: &str) -> EpisodeInfo {
     let mut episodes: Vec<i32> = Vec::new();
 
     for cap in SE_EP_RE.captures_iter(filename) {
-        if let Some(s) = cap.get(1) {
-            if let Ok(s_num) = s.as_str().parse::<i32>() {
-                season = Some(s_num);
-            }
+        if let Some(s) = cap.get(1)
+            && let Ok(s_num) = s.as_str().parse::<i32>()
+        {
+            season = Some(s_num);
         }
-        if let Some(e) = cap.get(2) {
-            if let Ok(e_start) = e.as_str().parse::<i32>() {
-                if let Some(e_end) = cap.get(3) {
-                    if let Ok(e_end_num) = e_end.as_str().parse::<i32>() {
-                        for ep in e_start..=e_end_num {
-                            if !episodes.contains(&ep) {
-                                episodes.push(ep);
-                            }
-                        }
+        if let Some(e) = cap.get(2)
+            && let Ok(e_start) = e.as_str().parse::<i32>()
+        {
+            if let Some(e_end) = cap.get(3)
+                && let Ok(e_end_num) = e_end.as_str().parse::<i32>()
+            {
+                for ep in e_start..=e_end_num {
+                    if !episodes.contains(&ep) {
+                        episodes.push(ep);
                     }
                 }
-                if !episodes.contains(&e_start) {
-                    episodes.push(e_start);
-                }
+            }
+            if !episodes.contains(&e_start) {
+                episodes.push(e_start);
             }
         }
     }
 
-    episodes.sort();
+    episodes.sort_unstable();
     EpisodeInfo {
         season,
         episodes,
@@ -65,20 +65,19 @@ pub fn should_include_file(filename: &str, filter_season: Option<i32>, filter_ep
     // "Complete" or "合集" files always match the season
     if info.is_complete {
         if let Some(fs) = filter_season {
-            return info.season.map_or(true, |s| s == fs);
+            return info.season.is_none_or(|s| s == fs);
         }
         return true;
     }
 
     // Check season match
-    if let Some(fs) = filter_season {
-        if let Some(file_season) = info.season {
-            if file_season != fs {
-                return false;
-            }
-        }
-        // If file doesn't have season info, assume it matches
+    if let Some(fs) = filter_season
+        && let Some(file_season) = info.season
+        && file_season != fs
+    {
+        return false;
     }
+    // If file doesn't have season info, assume it matches
 
     // Check episode match
     if !filter_episodes.is_empty() {
