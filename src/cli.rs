@@ -14,12 +14,16 @@ use tokimo_package_client_api::downloaders::traits::AddTorrentOptions;
 use tokimo_package_storage::{OpendalStorageProvider, StorageProvider};
 
 use crate::cli_types::{CategoriesCmd, ClientsCmd, PtSitesCmd, SubscriptionsCmd, TorrentsCmd, TrafficCmd};
+use tokimo_app_pt_subscription::AppState;
 use tokimo_app_pt_subscription::db::repos::download_client_repo::{
     CreateDownloadClientInput, DownloadClientDto, DownloadClientRepo, DownloadPath, UpdateDownloadClientInput,
 };
 use tokimo_app_pt_subscription::services::DownloadClientService;
+use tokimo_app_pt_subscription::shared::categories::all_categories;
 use tokimo_app_pt_subscription::subscriptions::models::pt_site::{PtSiteDto, PtUserInfoDto};
-use tokimo_app_pt_subscription::subscriptions::repos::pt_site_repo::{CreatePtSiteInput, PtSiteRepo, UpdatePtSiteInput};
+use tokimo_app_pt_subscription::subscriptions::repos::pt_site_repo::{
+    CreatePtSiteInput, PtSiteRepo, UpdatePtSiteInput,
+};
 use tokimo_app_pt_subscription::subscriptions::repos::subscription_repo::{
     CreateSubscriptionInput, EpisodeProgress, SubscriptionDto, SubscriptionRepo, UpdateSubscriptionInput,
 };
@@ -28,8 +32,6 @@ use tokimo_app_pt_subscription::subscriptions::repos::traffic_manage_repo::{
 };
 use tokimo_app_pt_subscription::subscriptions::services::pt_search::search_all_sites;
 use tokimo_app_pt_subscription::subscriptions::services::pt_user_info;
-use tokimo_app_pt_subscription::AppState;
-use tokimo_app_pt_subscription::shared::categories::all_categories;
 
 // ── DB connection ─────────────────────────────────────────────────────────────
 
@@ -474,7 +476,10 @@ fn parse_csv(raw: &str) -> Vec<String> {
 fn parse_csv_i32(raw: &str, field: &str) -> anyhow::Result<Vec<i32>> {
     parse_csv(raw)
         .into_iter()
-        .map(|item| item.parse::<i32>().with_context(|| format!("invalid {field} value: {item}")))
+        .map(|item| {
+            item.parse::<i32>()
+                .with_context(|| format!("invalid {field} value: {item}"))
+        })
         .collect()
 }
 
@@ -574,20 +579,33 @@ pub async fn run_subscriptions(auth: TokimoAuthArgs, cmd: SubscriptionsCmd) -> a
             println!("  Type: {}", sub.media_type);
             println!("  Year: {}", sub.year.as_deref().unwrap_or("-"));
             println!("  PosterPath: {}", sub.poster_path.as_deref().unwrap_or("-"));
-            println!("  Season: {}", sub.season.map_or_else(|| "-".to_string(), |value| value.to_string()));
+            println!(
+                "  Season: {}",
+                sub.season.map_or_else(|| "-".to_string(), |value| value.to_string())
+            );
             println!("  Status: {}", sub.status);
             println!("  Interval(min): {}", sub.interval_minutes);
             println!("  Category: {}", sub.category.as_deref().unwrap_or("-"));
-            println!("  TMDB ID: {}", sub.tmdb_id.map_or_else(|| "-".to_string(), |value| value.to_string()));
+            println!(
+                "  TMDB ID: {}",
+                sub.tmdb_id.map_or_else(|| "-".to_string(), |value| value.to_string())
+            );
             println!(
                 "  Episodes: {}",
                 sub.episodes
                     .as_ref()
-                    .map(|episodes| episodes.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(","))
+                    .map(|episodes| episodes
+                        .iter()
+                        .map(std::string::ToString::to_string)
+                        .collect::<Vec<_>>()
+                        .join(","))
                     .filter(|episodes| !episodes.is_empty())
                     .unwrap_or_else(|| "-".to_string())
             );
-            println!("  DownloadClientId: {}", sub.download_client_id.as_deref().unwrap_or("-"));
+            println!(
+                "  DownloadClientId: {}",
+                sub.download_client_id.as_deref().unwrap_or("-")
+            );
             println!(
                 "  SiteIds: {}",
                 sub.site_ids
@@ -776,7 +794,9 @@ pub async fn run_subscriptions(auth: TokimoAuthArgs, cmd: SubscriptionsCmd) -> a
         SubscriptionsCmd::Execute { subscription } => {
             let sub = resolve_subscription(&db, &user_id, &subscription).await?;
             let state = build_cli_state(db.clone())?;
-            let matched = tokimo_app_pt_subscription::subscriptions::services::execute::execute_subscription(&state, &sub.id).await;
+            let matched =
+                tokimo_app_pt_subscription::subscriptions::services::execute::execute_subscription(&state, &sub.id)
+                    .await;
             if matched {
                 println!("✓ Subscription run completed (matched & pushed)");
             } else {
@@ -1045,12 +1065,7 @@ pub async fn run_pt_sites(auth: TokimoAuthArgs, cmd: PtSitesCmd) -> anyhow::Resu
             if let Some(site_arg) = site {
                 let site = resolve_site(&db, &site_arg).await?;
                 let (ok, error, info) = check_site_status(&site).await;
-                println!(
-                    "{} {} ({})",
-                    if ok { "✓" } else { "✗" },
-                    site.name,
-                    site.site_id
-                );
+                println!("{} {} ({})", if ok { "✓" } else { "✗" }, site.name, site.site_id);
                 println!("  {}", site_status_detail(&site, ok, error, info));
             } else {
                 let sites = PtSiteRepo::list(&db).await?;

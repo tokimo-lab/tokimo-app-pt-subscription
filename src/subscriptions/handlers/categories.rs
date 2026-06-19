@@ -18,10 +18,7 @@ pub struct CategoryDto {
 
 // GET /subscriptions/categories
 pub async fn list_categories(_state: State<Arc<AppState>>) -> Response {
-    let categories: Vec<CategoryDto> = all_categories()
-        .into_iter()
-        .map(|slug| CategoryDto { slug })
-        .collect();
+    let categories: Vec<CategoryDto> = all_categories().into_iter().map(|slug| CategoryDto { slug }).collect();
 
     #[derive(Serialize)]
     #[serde(rename_all = "camelCase")]
