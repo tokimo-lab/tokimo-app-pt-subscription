@@ -63,10 +63,14 @@ const enUS = {
     "Periodically check download client connection status",
   "media.downloadClients.downloadPaths": "Download Paths",
   "media.downloadClients.downloadPathsHint":
-    "Enter allowed download paths with descriptions",
+    "Global path is required; sub-categories left empty fall back to globalPath/category.",
+  "media.downloadClients.downloadPathColCategory": "Category",
+  "media.downloadClients.downloadPathColPath": "Path",
+  "media.downloadClients.downloadPathColDesc": "Description",
+  "media.downloadClients.globalPathPlaceholder": "Required, e.g. /downloads",
+  "media.downloadClients.subPathPlaceholder": "Optional, auto-derived if empty",
   "media.downloadClients.downloadPathPlaceholder": "e.g. /data/video",
-  "media.downloadClients.downloadPathDescPlaceholder":
-    "e.g. Default video download path",
+  "media.downloadClients.downloadPathDescPlaceholder": "Description (optional)",
   "media.downloadClients.addDownloadPath": "Add download path",
   "media.downloadClients.downloadPathsRequired":
     "At least one download path is required",
@@ -138,6 +142,7 @@ const enUS = {
   "category.game": "Game",
   "category.course": "Course",
   "category.other": "Other",
+  "category.global": "Global",
 } as const;
 
 export default enUS;

@@ -61,9 +61,14 @@ const zhCN = {
   "media.downloadClients.monitorEnabledExtra": "定期检查下载客户端的连接状态",
   "media.downloadClients.downloadPaths": "下载路径",
   "media.downloadClients.downloadPathsHint":
-    "填写下载器允许文件下载的路径，一个路径一行，填写路径和路径描述",
+    "全局路径必填，子分类留空则自动拼接为 全局路径/分类。",
+  "media.downloadClients.downloadPathColCategory": "分类",
+  "media.downloadClients.downloadPathColPath": "路径",
+  "media.downloadClients.downloadPathColDesc": "备注",
+  "media.downloadClients.globalPathPlaceholder": "必填，例如 /downloads",
+  "media.downloadClients.subPathPlaceholder": "可选，留空自动拼接",
   "media.downloadClients.downloadPathPlaceholder": "例如: /data/video",
-  "media.downloadClients.downloadPathDescPlaceholder": "例如: 视频默认下载路径",
+  "media.downloadClients.downloadPathDescPlaceholder": "备注（可选）",
   "media.downloadClients.addDownloadPath": "添加下载路径",
   "media.downloadClients.downloadPathsRequired": "请至少添加一个下载路径",
   "media.downloadClients.testing": "检测中...",
@@ -139,6 +144,7 @@ const zhCN = {
   "category.game": "游戏",
   "category.course": "课程",
   "category.other": "其他",
+  "category.global": "全局",
 } as const;
 
 export default zhCN;

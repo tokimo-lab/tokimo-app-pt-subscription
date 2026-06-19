@@ -1,12 +1,11 @@
+import { useQuery } from "@tanstack/react-query";
 import {
   AppSidebar,
   Button,
-  DeleteOutlined,
   Form,
   Input,
   ScrollArea,
   SegmentedControl,
-  Select,
 } from "@tokimo/ui";
 import {
   CloudDownload,
@@ -21,10 +20,12 @@ import {
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  categoriesApi,
   type DownloadClientDto,
   type DownloadClientType,
   downloadsApi,
 } from "../api/client";
+import { categoryLabel } from "./search-utils";
 
 // ── Type config ──────────────────────────────────────────────────────────────
 
@@ -91,29 +92,13 @@ const CLIENT_TYPE_LIST: ClientTypeConfig[] = [
 
 // ── Download paths field ─────────────────────────────────────────────────────
 
-const CATEGORY_PATH_OPTIONS = [
-  { label: "全局", value: "global" },
-  { label: "电影", value: "movie" },
-  { label: "剧集", value: "tv" },
-  { label: "动漫", value: "anime" },
-  { label: "纪录片", value: "documentary" },
-  { label: "综艺", value: "variety" },
-  { label: "体育", value: "sports" },
-  { label: "MV", value: "mv" },
-  { label: "音乐", value: "music" },
-  { label: "电子书", value: "ebook" },
-  { label: "有声书", value: "audiobook" },
-  { label: "软件", value: "software" },
-  { label: "游戏", value: "game" },
-  { label: "课程", value: "course" },
-  { label: "其他", value: "other" },
-];
-
 interface DownloadPathRow {
   type: string;
   path: string;
   description: string;
 }
+
+const dc = "media.downloadClients";
 
 function DownloadPathsField({
   value,
@@ -122,102 +107,97 @@ function DownloadPathsField({
   value: DownloadPathRow[];
   onChange: (v: DownloadPathRow[]) => void;
 }) {
-  const usedTypes = new Set(value.map((r) => r.type));
-  const availableOptions = CATEGORY_PATH_OPTIONS.filter(
-    (o) => !usedTypes.has(o.value),
+  const { t } = useTranslation();
+  const categoriesQuery = useQuery({
+    queryKey: ["categories"],
+    queryFn: () => categoriesApi.list(),
+  });
+
+  const slugs = useMemo(
+    () => [
+      "global",
+      ...(categoriesQuery.data?.categories ?? []).map((c) => c.slug),
+    ],
+    [categoriesQuery.data],
   );
 
-  const addRow = () => {
-    const nextType = availableOptions[0]?.value ?? "other";
-    onChange([...value, { type: nextType, path: "", description: "" }]);
-  };
+  const rowBySlug = useMemo(() => {
+    const map = new Map<string, DownloadPathRow>();
+    for (const row of value) map.set(row.type, row);
+    return map;
+  }, [value]);
 
-  const removeRow = (idx: number) => {
-    if (value[idx]?.type === "global") return;
-    onChange(value.filter((_, i) => i !== idx));
-  };
+  const globalPath = rowBySlug.get("global")?.path ?? "";
 
   const updateRow = (
-    idx: number,
-    field: keyof DownloadPathRow,
+    slug: string,
+    field: "path" | "description",
     val: string,
   ) => {
-    const next = [...value];
-    next[idx] = { ...next[idx], [field]: val };
-    onChange(next);
+    const existing = rowBySlug.get(slug);
+    if (existing) {
+      onChange(
+        value.map((r) => (r.type === slug ? { ...r, [field]: val } : r)),
+      );
+    } else {
+      onChange([
+        ...value,
+        { type: slug, path: "", description: "", [field]: val },
+      ]);
+    }
   };
-
-  const globalPath = value.find((r) => r.type === "global")?.path ?? "";
 
   return (
     <div className="border-t border-black/[0.06] dark:border-white/[0.08] pt-4 mt-2">
-      <p className="text-sm font-semibold mb-1">下载路径</p>
+      <p className="text-sm font-semibold mb-1">{t(`${dc}.downloadPaths`)}</p>
       <p className="text-xs text-fg-muted mb-3">
-        按分类设置下载路径。全局路径必填，子分类留空则自动拼接为
-        全局路径/分类名。
+        {t(`${dc}.downloadPathsHint`)}
       </p>
 
       <div className="space-y-2">
-        <div className="grid grid-cols-[100px_1fr_140px_32px] gap-2 text-xs text-fg-muted">
-          <span>类型</span>
-          <span>路径</span>
-          <span>备注</span>
-          <span />
+        <div className="grid grid-cols-[110px_1fr_160px] gap-2 text-xs text-fg-muted">
+          <span>{t(`${dc}.downloadPathColCategory`)}</span>
+          <span>{t(`${dc}.downloadPathColPath`)}</span>
+          <span>{t(`${dc}.downloadPathColDesc`)}</span>
         </div>
 
-        {value.map((row, idx) => {
-          const isGlobal = row.type === "global";
+        {slugs.map((slug) => {
+          const isGlobal = slug === "global";
+          const row = rowBySlug.get(slug);
+          const path = row?.path ?? "";
+          const description = row?.description ?? "";
           const computedPath =
-            !row.path && !isGlobal && globalPath
-              ? `${globalPath.replace(/\/$/, "")}/${row.type}`
+            !path && !isGlobal && globalPath
+              ? `${globalPath.replace(/\/$/, "")}/${slug}`
               : undefined;
 
           return (
             <div
-              key={row.type || idx}
-              className="grid grid-cols-[100px_1fr_140px_32px] gap-2 items-center"
+              key={slug}
+              className="grid grid-cols-[110px_1fr_160px] gap-2 items-center"
             >
-              <Select
-                options={CATEGORY_PATH_OPTIONS.filter(
-                  (o) => o.value === row.type || !usedTypes.has(o.value),
-                )}
-                value={row.type}
-                onChange={(val: string) => updateRow(idx, "type", val)}
-              />
+              <span className="text-sm truncate">
+                {isGlobal ? t("category.global") : categoryLabel(slug, t)}
+                {isGlobal && <span className="text-red-500 ml-0.5">*</span>}
+              </span>
               <Input
                 placeholder={
                   isGlobal
-                    ? "必填，如 /downloads"
-                    : computedPath
-                      ? computedPath
-                      : "可选，留空自动拼接"
+                    ? t(`${dc}.globalPathPlaceholder`)
+                    : (computedPath ?? t(`${dc}.subPathPlaceholder`))
                 }
-                value={row.path}
-                onChange={(e) => updateRow(idx, "path", e.target.value)}
+                value={path}
+                onChange={(e) => updateRow(slug, "path", e.target.value)}
               />
               <Input
-                placeholder="备注（可选）"
-                value={row.description}
-                onChange={(e) => updateRow(idx, "description", e.target.value)}
-              />
-              <Button
-                variant="text"
-                danger
-                icon={<DeleteOutlined />}
-                disabled={isGlobal}
-                onClick={() => removeRow(idx)}
-                className="shrink-0"
+                placeholder={t(`${dc}.downloadPathDescPlaceholder`)}
+                value={description}
+                onChange={(e) => updateRow(slug, "description", e.target.value)}
               />
             </div>
           );
         })}
       </div>
-
-      {availableOptions.length > 0 && (
-        <Button variant="text" size="small" onClick={addRow} className="mt-2">
-          + 添加下载路径
-        </Button>
-      )}
     </div>
   );
 }
@@ -237,7 +217,6 @@ interface Props {
 export default function ClientFormWindow({ win }: Props) {
   const { t } = useTranslation();
   const [form] = Form.useForm();
-  const dc = "media.downloadClients";
 
   const editingClient = win.metadata.editingClient as
     | DownloadClientDto
@@ -246,14 +225,17 @@ export default function ClientFormWindow({ win }: Props) {
 
   const [submitting, setSubmitting] = useState(false);
   const [downloadPaths, setDownloadPaths] = useState<DownloadPathRow[]>(() => {
-    if (editingClient?.downloadPaths?.length) {
-      return editingClient.downloadPaths.map((p, i) => ({
-        type: (p as Record<string, string>).type ?? (i === 0 ? "global" : ""),
+    const rows: DownloadPathRow[] = (editingClient?.downloadPaths ?? [])
+      .map((p) => ({
+        type: (p as Record<string, string>).type ?? "",
         path: p.path,
         description: p.description,
-      }));
+      }))
+      .filter((r) => r.type);
+    if (!rows.some((r) => r.type === "global")) {
+      rows.unshift({ type: "global", path: "", description: "" });
     }
-    return [{ type: "global", path: "", description: "" }];
+    return rows;
   });
 
   // Initialize form values
@@ -302,7 +284,9 @@ export default function ClientFormWindow({ win }: Props) {
     const values = await form.validateFields();
     const globalRow = downloadPaths.find((p) => p.type === "global");
     if (!globalRow?.path.trim()) return;
-    const validPaths = downloadPaths.filter((p) => p.type);
+    const validPaths = downloadPaths.filter(
+      (p) => p.type === "global" || p.path.trim(),
+    );
     setSubmitting(true);
     try {
       if (editingClient) {
