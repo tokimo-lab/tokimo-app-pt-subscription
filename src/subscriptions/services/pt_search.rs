@@ -1,7 +1,7 @@
 use futures_util::future::join_all;
 use tokimo_pt_search::{PtSearchResult, SiteAuth, SiteType, get_site_config, search_site};
 
-use crate::shared::categories::{resolve_category, resolve_from_str};
+use crate::shared::categories::{Category, resolve_category};
 use crate::subscriptions::models::pt_site::PtSiteDto;
 
 #[derive(Debug, serde::Serialize)]
@@ -19,12 +19,6 @@ pub struct PtSearchResultWithSite {
     pub result: PtSearchResult,
     pub site_db_id: String,
     pub site_name: String,
-    /// Canonical category name in English (e.g. "music", "movie")
-    pub category_name: String,
-    /// Canonical category display name in Chinese (e.g. "音乐", "电影")
-    pub category_display_name: String,
-    /// Canonical category ID
-    pub canonical_category_id: String,
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -115,10 +109,10 @@ pub async fn search_all_sites(
     keyword: &str,
     filter_categories: &[String],
 ) -> PtSearchResponse {
-    // Convert filter categories to canonical category IDs for matching
-    let canonical_filters: Vec<String> = filter_categories
+    // Normalize filter categories to canonical slugs for matching
+    let slug_filters: Vec<String> = filter_categories
         .iter()
-        .filter_map(|c| resolve_from_str(c).map(|cat| cat.id().to_string()))
+        .filter_map(|c| Category::from_slug(c).map(|cat| cat.slug().to_string()))
         .collect();
 
     let futures: Vec<_> = sites
@@ -136,22 +130,22 @@ pub async fn search_all_sites(
         for mut result in results {
             fix_urls(&mut result, &site.domain, &site.site_id);
 
-            // Resolve category using static mapping
-            let (cat_canonical, cat_name, cat_display) = resolve_category(&site.site_id, &result.category);
+            // Resolve raw site category to a canonical slug
+            let slug = resolve_category(&site.site_id, &result.category);
 
-            // Apply category filter (match against canonical ID)
-            if !canonical_filters.is_empty() && !canonical_filters.contains(&cat_canonical) {
+            // Apply category filter (match against canonical slug)
+            if !slug_filters.is_empty() && !slug_filters.contains(&slug) {
                 continue;
             }
+
+            // Replace the raw site category with the canonical slug
+            result.category = slug;
 
             count += 1;
             all_results.push(PtSearchResultWithSite {
                 result,
                 site_db_id: site.id.clone(),
                 site_name: site.name.clone(),
-                category_name: cat_name,
-                category_display_name: cat_display,
-                canonical_category_id: cat_canonical,
             });
         }
         site_summaries.push(SiteSummary {
