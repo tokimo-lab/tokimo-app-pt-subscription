@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Checkbox, Form, Input, ScrollArea, Select } from "@tokimo/ui";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   type CreateSubscriptionInput,
   categoriesApi,
@@ -11,6 +12,7 @@ import {
   type Subscription,
   subscriptionsApi,
 } from "../api/client";
+import { categoryLabel } from "./search-utils";
 
 interface WindowHandle {
   id: string;
@@ -25,6 +27,7 @@ interface Props {
 export default function SubscriptionFormWindow({ win }: Props) {
   const [form] = Form.useForm();
   const utils = useQueryClient();
+  const { t } = useTranslation();
 
   const editingSub = win.metadata.editingSubscription as Subscription | null;
   const onSaved = win.metadata.onSaved as (() => void) | undefined;
@@ -187,8 +190,8 @@ export default function SubscriptionFormWindow({ win }: Props) {
   };
 
   const categoryOptions = categories.map((c) => ({
-    label: c.name,
-    value: c.enName,
+    label: categoryLabel(c.slug, t),
+    value: c.slug,
   }));
 
   const clientOptions = clients.map((c) => ({
@@ -255,7 +258,11 @@ export default function SubscriptionFormWindow({ win }: Props) {
           {/* ── Row 4: 分类 + 下载器 + 间隔 ── */}
           <div className="grid grid-cols-3 gap-3">
             <Form.Item name="category" label="分类">
-              <Select options={categoryOptions} placeholder="选择" allowClear />
+              <Select
+                options={categoryOptions}
+                placeholder={t("category.placeholder")}
+                allowClear
+              />
             </Form.Item>
             <Form.Item name="downloadClientId" label="下载器">
               <Select options={clientOptions} placeholder="选择" allowClear />

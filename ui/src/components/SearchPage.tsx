@@ -2,6 +2,7 @@ import { useWindowActions } from "@tokimo/sdk";
 import { AutoComplete, Image, Popover, ScrollArea, Tag } from "@tokimo/ui";
 import { ChevronDown, Clock, Film, Star, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { PtSearchResultWithSite, SiteSummary } from "../api/client";
 import { categoriesApi, searchApi } from "../api/client";
 import PtResultsSection from "./PtResultsSection";
@@ -15,6 +16,7 @@ import {
   type TmdbMedia,
 } from "./search-api";
 import { useDebounce } from "./search-hooks";
+import { categoryLabel } from "./search-utils";
 
 // ── Constants ────────────────────────────────────────────────────────────
 
@@ -164,6 +166,7 @@ function SuggestionLabel({ media }: { media: TmdbMedia }) {
 
 export default function SearchPage() {
   const windowActions = useWindowActions();
+  const { t } = useTranslation();
   const [keyword, setKeyword] = useState("");
   const [suggestions, setSuggestions] = useState<TmdbMedia[]>([]);
   const [history, setHistory] = useState<SearchHistoryItem[]>([]);
@@ -175,7 +178,16 @@ export default function SearchPage() {
   const [tmdbLoading, setTmdbLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [lastSearchKeyword, setLastSearchKeyword] = useState("");
-  const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([]);
+  const [categorySlugs, setCategorySlugs] = useState<string[]>([]);
+
+  const categoryOptions = useMemo<CategoryOption[]>(
+    () =>
+      categorySlugs.map((slug) => ({
+        label: categoryLabel(slug, t),
+        value: slug,
+      })),
+    [categorySlugs, t],
+  );
 
   const suggestionCache = useRef<Map<string, TmdbMedia[]>>(new Map());
   const debouncedKeyword = useDebounce(keyword, 300);
@@ -196,12 +208,7 @@ export default function SearchPage() {
     categoriesApi
       .list()
       .then((data) => {
-        setCategoryOptions(
-          data.categories.map((c) => ({
-            label: c.name,
-            value: String(c.id),
-          })),
-        );
+        setCategorySlugs(data.categories.map((c) => c.slug));
       })
       .catch(() => {});
   }, []);

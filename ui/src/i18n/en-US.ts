@@ -122,6 +122,22 @@ const enUS = {
   "media.torrents.state.error": "Error",
   "media.torrents.state.missingFiles": "Missing Files",
   "media.torrents.state.unknown": "Unknown",
+
+  // ── Media categories ──
+  "category.placeholder": "Select",
+  "category.movie": "Movie",
+  "category.tv": "TV Series",
+  "category.anime": "Anime",
+  "category.documentary": "Documentary",
+  "category.variety": "Variety",
+  "category.sports": "Sports",
+  "category.music": "Music",
+  "category.ebook": "eBook",
+  "category.audiobook": "Audiobook",
+  "category.software": "Software",
+  "category.game": "Game",
+  "category.course": "Course",
+  "category.other": "Other",
 } as const;
 
 export default enUS;

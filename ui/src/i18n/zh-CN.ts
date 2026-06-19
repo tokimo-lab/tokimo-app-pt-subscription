@@ -123,6 +123,22 @@ const zhCN = {
   "media.torrents.state.error": "错误",
   "media.torrents.state.missingFiles": "文件丢失",
   "media.torrents.state.unknown": "未知",
+
+  // ── 媒体分类 ──
+  "category.placeholder": "选择",
+  "category.movie": "电影",
+  "category.tv": "剧集",
+  "category.anime": "动漫",
+  "category.documentary": "纪录片",
+  "category.variety": "综艺",
+  "category.sports": "体育",
+  "category.music": "音乐",
+  "category.ebook": "电子书",
+  "category.audiobook": "有声书",
+  "category.software": "软件",
+  "category.game": "游戏",
+  "category.course": "课程",
+  "category.other": "其他",
 } as const;
 
 export default zhCN;

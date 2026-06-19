@@ -245,11 +245,11 @@ export default function DownloadConfirmWindow({ win }: Props) {
 
   // 解析保存路径
   const resolvePathQuery = useQuery({
-    queryKey: ["resolve-path", defaultClient?.id, torrent.categoryName],
+    queryKey: ["resolve-path", defaultClient?.id, torrent.category],
     queryFn: () =>
       downloadsApi.torrent.resolvePath({
         clientId: defaultClient!.id,
-        category: torrent.categoryName || undefined,
+        category: torrent.category || undefined,
       }),
     enabled: !!defaultClient,
   });

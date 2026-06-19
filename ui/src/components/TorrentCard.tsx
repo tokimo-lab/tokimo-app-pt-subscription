@@ -11,11 +11,12 @@ import {
   Tag,
   Tooltip,
 } from "@tokimo/ui";
+import { useTranslation } from "react-i18next";
 import type { PtSearchResultWithSite } from "../api/client";
 import {
+  categoryLabel,
   formatDate,
   getCategoryColor,
-  getCategoryName,
   getDownloadFactor,
   getUploadFactor,
   parseTitleTags,
@@ -137,6 +138,7 @@ export interface TorrentCardBodyProps {
 }
 
 export function TorrentCardBody({ torrent }: TorrentCardBodyProps) {
+  const { t } = useTranslation();
   const discountTags = getDiscountTags(torrent);
   const mediaTags = getMediaTags(torrent);
 
@@ -206,9 +208,7 @@ export function TorrentCardBody({ torrent }: TorrentCardBodyProps) {
             {torrent.siteName}
           </Tag>
           <Tag color={getCategoryColor(torrent.category)} className="mr-0">
-            {torrent.categoryDisplayName ||
-              torrent.categoryName ||
-              getCategoryName(torrent.category)}
+            {categoryLabel(torrent.category, t)}
           </Tag>
           <span className="text-fg-muted">{torrent.size}</span>
           {torrent.uploadTime && (

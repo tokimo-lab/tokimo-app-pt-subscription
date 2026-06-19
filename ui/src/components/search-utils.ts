@@ -1,3 +1,4 @@
+import type { TFunction } from "i18next";
 import type { PtSearchResultWithSite } from "../api/client";
 
 export const PT_PAGE_SIZE = 20;
@@ -190,77 +191,28 @@ export const formatDate = (dateStr: string | undefined): string => {
   }
 };
 
-// ── Category name mapping ────────────────────────────────────────────────
+// ── Category slugs ────────────────────────────────────────────────────────
 
-// Canonical category ID → display name
-const CATEGORY_NAMES: Record<number, string> = {
-  1: "电影",
-  2: "剧集",
-  3: "动漫",
-  4: "纪录片",
-  5: "综艺",
-  6: "体育",
-  7: "音乐",
-  8: "电子书",
-  9: "有声书",
-  10: "软件",
-  11: "游戏",
-  12: "课程",
-  99: "其他",
-};
-
-export function getCategoryName(category: string | number): string {
-  // If category is a number or numeric string, use canonical ID mapping
-  const id = typeof category === "number" ? category : parseInt(category, 10);
-  if (!Number.isNaN(id) && CATEGORY_NAMES[id]) {
-    return CATEGORY_NAMES[id];
-  }
-  // Fallback: try as English name
-  const enMap: Record<string, string> = {
-    movie: "电影",
-    tv: "剧集",
-    anime: "动漫",
-    documentary: "纪录片",
-    variety: "综艺",
-    sports: "体育",
-    music: "音乐",
-    ebook: "电子书",
-    audiobook: "有声书",
-    software: "软件",
-    game: "游戏",
-    course: "课程",
-    other: "其他",
-  };
-  if (typeof category === "string" && enMap[category]) {
-    return enMap[category];
-  }
-  return String(category);
+/** Translate a canonical category slug, falling back to the raw slug. */
+export function categoryLabel(slug: string, t: TFunction): string {
+  return t(`category.${slug}`, { defaultValue: slug });
 }
 
-export function getCategoryColor(category: string | number): string {
-  const id = typeof category === "number" ? category : parseInt(category, 10);
-  if (!Number.isNaN(id)) {
-    if (id === 1) return "blue"; // 电影
-    if (id === 2) return "green"; // 剧集
-    if (id === 3) return "purple"; // 动漫
-    if (id === 4) return "cyan"; // 纪录片
-    if (id === 5) return "orange"; // 综艺
-    if (id === 6) return "red"; // 体育
-    if (id === 7) return "pink"; // 音乐
-    if (id === 8 || id === 9) return "gold"; // 电子书/有声书
-    return "default";
-  }
-  // Fallback by name
-  const name = getCategoryName(category);
-  if (name === "电影") return "blue";
-  if (name === "剧集") return "green";
-  if (name === "动漫") return "purple";
-  if (name === "纪录片") return "cyan";
-  if (name === "综艺") return "orange";
-  if (name === "音乐") return "pink";
-  if (name === "体育") return "red";
-  if (name === "电子书" || name === "有声书") return "gold";
-  return "default";
+// Canonical category slug → tag color
+const CATEGORY_COLORS: Record<string, string> = {
+  movie: "blue",
+  tv: "green",
+  anime: "purple",
+  documentary: "cyan",
+  variety: "orange",
+  sports: "red",
+  music: "pink",
+  ebook: "gold",
+  audiobook: "gold",
+};
+
+export function getCategoryColor(slug: string): string {
+  return CATEGORY_COLORS[slug] ?? "default";
 }
 
 export function getDownloadFactor(torrent: PtSearchResultWithSite): number {

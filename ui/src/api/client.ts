@@ -397,8 +397,6 @@ export interface PtSearchResultWithSite {
   leechers: number;
   grabs?: number;
   category: string;
-  categoryName: string;
-  categoryDisplayName: string;
   uploadTime: string;
   downloadUrl: string;
   detailUrl: string;
@@ -443,9 +441,7 @@ export const searchApi = {
 // ── Categories API ───────────────────────────────────────────────────────
 
 export interface CategoryDto {
-  id: number;
-  name: string;
-  enName: string;
+  slug: string;
 }
 
 export interface CategoriesResponse {
