@@ -16,9 +16,8 @@ use crate::db::repos::download_client_repo::{
     CreateDownloadClientInput, DownloadClientRepo, ReorderItem, UpdateDownloadClientInput,
 };
 use crate::services::DownloadClientService;
-use crate::shared::categories::category_to_en_name;
+use crate::shared::path::{normalize_category_slug, resolve_download_path};
 use crate::shared::episode_parser::should_include_file;
-use crate::shared::filter_options::resolve_download_path;
 use crate::shared::torrent_parser::parse_torrent;
 use crate::subscriptions::repos::pt_site_repo::PtSiteRepo;
 
@@ -447,7 +446,7 @@ pub async fn resolve_save_path(
         .collect();
 
     let cat_raw = body.category.as_deref().unwrap_or("global");
-    let cat = category_to_en_name(cat_raw);
+    let cat = normalize_category_slug(cat_raw);
     let resolved = resolve_download_path(&paths, &cat);
 
     Ok(ok(serde_json::json!({
@@ -537,7 +536,7 @@ pub async fn download_with_filter(
             .map(|p| (p.r#type.clone(), p.path.clone(), p.description.clone()))
             .collect();
         let cat_raw = body.category.as_deref().unwrap_or("global");
-        resolve_download_path(&paths, &category_to_en_name(cat_raw))
+        resolve_download_path(&paths, &normalize_category_slug(cat_raw))
     };
 
     // 4. Add torrent to download client (paused if we need to filter files)

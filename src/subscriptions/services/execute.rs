@@ -7,9 +7,8 @@ use crate::AppState;
 use crate::db::entities::subscriptions;
 use crate::db::repos::download_client_repo::DownloadClientRepo;
 use crate::services::DownloadClientService;
-use crate::shared::categories::category_to_en_name;
+use crate::shared::path::{normalize_category_slug, resolve_download_path};
 use crate::shared::episode_parser::should_include_file;
-use crate::shared::filter_options::resolve_download_path;
 use crate::shared::torrent_parser::parse_torrent;
 use crate::subscriptions::handlers::subscription as sub_handler;
 use crate::subscriptions::models::pt_site::PtSiteDto;
@@ -183,7 +182,7 @@ pub async fn execute_subscription(state: &Arc<AppState>, sub_id: &str) -> bool {
                     .map(|p| (p.r#type.clone(), p.path.clone(), p.description.clone()))
                     .collect();
                 let cat_raw = sub.category.as_deref().unwrap_or("global");
-                let cat = category_to_en_name(cat_raw);
+                let cat = normalize_category_slug(cat_raw);
                 resolve_download_path(&paths, &cat)
             }
             _ => None,
