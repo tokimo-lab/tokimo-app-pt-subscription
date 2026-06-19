@@ -15,8 +15,8 @@ mod cli_types;
 use std::path::PathBuf;
 use std::sync::{Arc, OnceLock};
 
-use clap::{Parser, Subcommand};
-use cli_types::{ClientsCmd, TorrentsCmd};
+use clap::Parser;
+use cli_types::Command;
 use tokimo_app_pt_subscription::AppState;
 use tokimo_bus_cli::TokimoAuthArgs;
 use tokimo_bus_client::{BusClient, ClientConfig};
@@ -36,20 +36,13 @@ fn data_local_path() -> PathBuf {
     term_width = 100
 )]
 struct Cli {
+    /// Tokimo authentication options.
     #[command(flatten)]
     auth: TokimoAuthArgs,
+
+    /// Top-level command.
     #[command(subcommand)]
     command: Option<Command>,
-}
-
-#[derive(Subcommand, Debug)]
-enum Command {
-    /// Manage download clients
-    #[command(subcommand)]
-    Clients(ClientsCmd),
-    /// Manage torrents
-    #[command(subcommand)]
-    Torrents(TorrentsCmd),
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -82,6 +75,18 @@ async fn main() -> anyhow::Result<()> {
             let result = match cmd {
                 Command::Clients(clients_cmd) => cli::run_clients(auth, clients_cmd).await,
                 Command::Torrents(torrents_cmd) => cli::run_torrents(auth, torrents_cmd).await,
+                Command::Subscriptions(sub_cmd) => cli::run_subscriptions(auth, sub_cmd).await,
+                Command::PtSites(pt_sites_cmd) => cli::run_pt_sites(auth, pt_sites_cmd).await,
+                Command::Search {
+                    keyword,
+                    sites,
+                    categories,
+                } => cli::run_search(auth, keyword, sites, categories).await,
+                Command::Traffic(traffic_cmd) => cli::run_traffic(auth, traffic_cmd).await,
+                Command::Categories(categories_cmd) => {
+                    cli::run_categories(categories_cmd);
+                    Ok(())
+                }
             };
             if let Err(error) = result {
                 eprintln!("Error: {error:#}");

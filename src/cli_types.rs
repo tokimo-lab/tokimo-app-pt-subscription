@@ -162,3 +162,462 @@ pub enum TorrentsCmd {
         client: String,
     },
 }
+
+#[derive(Subcommand, Debug)]
+pub enum SubscriptionsCmd {
+    /// List subscriptions for the current user
+    List,
+
+    /// Get one subscription
+    Get {
+        /// Subscription title or ID
+        subscription: String,
+    },
+
+    /// Create a subscription
+    Create {
+        /// Raw JSON body for CreateSubscriptionInput
+        #[arg(long)]
+        json: Option<String>,
+
+        /// Media type (movie or tv)
+        #[arg(long)]
+        media_type: Option<String>,
+
+        /// TMDB ID
+        #[arg(long)]
+        tmdb_id: Option<i64>,
+
+        /// Subscription title
+        #[arg(long)]
+        title: Option<String>,
+
+        /// Release year
+        #[arg(long)]
+        year: Option<String>,
+
+        /// Season number
+        #[arg(long)]
+        season: Option<i32>,
+
+        /// Episode list (comma-separated)
+        #[arg(long)]
+        episodes: Option<String>,
+
+        /// Canonical category slug
+        #[arg(long)]
+        category: Option<String>,
+
+        /// Source tags (comma-separated)
+        #[arg(long)]
+        sources: Option<String>,
+
+        /// Resolution tags (comma-separated)
+        #[arg(long)]
+        resolutions: Option<String>,
+
+        /// Codec tags (comma-separated)
+        #[arg(long)]
+        codecs: Option<String>,
+
+        /// Release groups (comma-separated)
+        #[arg(long)]
+        release_groups: Option<String>,
+
+        /// Minimum size in GB
+        #[arg(long)]
+        min_size: Option<f64>,
+
+        /// Maximum size in GB
+        #[arg(long)]
+        max_size: Option<f64>,
+
+        /// Minimum seeders
+        #[arg(long)]
+        min_seeders: Option<f64>,
+
+        /// Maximum seeders
+        #[arg(long)]
+        max_seeders: Option<f64>,
+
+        /// Include keywords
+        #[arg(long)]
+        include_keywords: Option<String>,
+
+        /// Exclude keywords
+        #[arg(long)]
+        exclude_keywords: Option<String>,
+
+        /// Only match free torrents
+        #[arg(long, default_value_t = false)]
+        free_only: bool,
+
+        /// Exclude HR torrents
+        #[arg(long, default_value_t = false)]
+        exclude_hr: bool,
+
+        /// Max downloads per run
+        #[arg(long)]
+        max_downloads_per_run: Option<i32>,
+
+        /// Execute interval in minutes
+        #[arg(long)]
+        interval_minutes: Option<i32>,
+
+        /// Site IDs (comma-separated)
+        #[arg(long)]
+        site_ids: Option<String>,
+
+        /// Download client ID
+        #[arg(long)]
+        download_client_id: Option<String>,
+    },
+
+    /// Update a subscription
+    Update {
+        /// Subscription title or ID
+        subscription: String,
+
+        /// Raw JSON body for UpdateSubscriptionInput
+        #[arg(long)]
+        json: Option<String>,
+
+        /// Episode list (comma-separated, empty string clears)
+        #[arg(long)]
+        episodes: Option<String>,
+
+        /// Canonical category slug (empty string clears)
+        #[arg(long)]
+        category: Option<String>,
+
+        /// Source tags (comma-separated, empty string clears)
+        #[arg(long)]
+        sources: Option<String>,
+
+        /// Resolution tags (comma-separated, empty string clears)
+        #[arg(long)]
+        resolutions: Option<String>,
+
+        /// Codec tags (comma-separated, empty string clears)
+        #[arg(long)]
+        codecs: Option<String>,
+
+        /// Release groups (comma-separated, empty string clears)
+        #[arg(long)]
+        release_groups: Option<String>,
+
+        /// Minimum size in GB
+        #[arg(long)]
+        min_size: Option<f64>,
+
+        /// Maximum size in GB
+        #[arg(long)]
+        max_size: Option<f64>,
+
+        /// Minimum seeders
+        #[arg(long)]
+        min_seeders: Option<f64>,
+
+        /// Maximum seeders
+        #[arg(long)]
+        max_seeders: Option<f64>,
+
+        /// Include keywords (empty string clears)
+        #[arg(long)]
+        include_keywords: Option<String>,
+
+        /// Exclude keywords (empty string clears)
+        #[arg(long)]
+        exclude_keywords: Option<String>,
+
+        /// Free-only filter
+        #[arg(long)]
+        free_only: Option<bool>,
+
+        /// Exclude-HR filter
+        #[arg(long)]
+        exclude_hr: Option<bool>,
+
+        /// Subscription status
+        #[arg(long)]
+        status: Option<String>,
+
+        /// Execute interval in minutes
+        #[arg(long)]
+        interval_minutes: Option<i32>,
+
+        /// Max downloads per run
+        #[arg(long)]
+        max_downloads_per_run: Option<i32>,
+
+        /// Site IDs (comma-separated, empty string clears)
+        #[arg(long)]
+        site_ids: Option<String>,
+
+        /// Download client ID (empty string clears)
+        #[arg(long)]
+        download_client_id: Option<String>,
+    },
+
+    /// Delete a subscription
+    Delete {
+        /// Subscription title or ID
+        subscription: String,
+    },
+
+    /// Execute a subscription immediately
+    Execute {
+        /// Subscription title or ID
+        subscription: String,
+    },
+
+    /// Read subscription logs
+    Logs {
+        /// Subscription title or ID
+        subscription: String,
+
+        /// Limit to last N log lines
+        #[arg(long)]
+        limit: Option<usize>,
+    },
+
+    /// Read episode download progress
+    EpisodeProgress {
+        /// Subscription title or ID
+        subscription: String,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+pub enum PtSitesCmd {
+    /// List PT sites
+    List {
+        /// Include connectivity status
+        #[arg(long, default_value_t = false)]
+        status: bool,
+    },
+
+    /// Get one PT site
+    Get {
+        /// Site ID, site_id, or name
+        site: String,
+    },
+
+    /// Add a PT site
+    Add {
+        /// Display name
+        #[arg(long)]
+        name: String,
+
+        /// Site identifier (e.g. m-team)
+        #[arg(long)]
+        site_id: String,
+
+        /// Site domain URL (required here; CLI cannot access server-only site-domain registry)
+        #[arg(long)]
+        domain: String,
+
+        /// Auth type (none, cookies, api_key)
+        #[arg(long)]
+        auth_type: Option<String>,
+
+        /// Cookie header value
+        #[arg(long)]
+        cookies: Option<String>,
+
+        /// API key
+        #[arg(long)]
+        api_key: Option<String>,
+
+        /// Auto stop minutes
+        #[arg(long)]
+        auto_stop_minutes: Option<i64>,
+
+        /// Enable adult content
+        #[arg(long, default_value_t = false)]
+        adult_enabled: bool,
+    },
+
+    /// Update a PT site
+    Update {
+        /// Site ID, site_id, or name
+        site: String,
+
+        /// Site identifier
+        #[arg(long)]
+        site_id: Option<String>,
+
+        /// Display name
+        #[arg(long)]
+        name: Option<String>,
+
+        /// Site domain URL
+        #[arg(long)]
+        domain: Option<String>,
+
+        /// Auth type (none, cookies, api_key)
+        #[arg(long)]
+        auth_type: Option<String>,
+
+        /// Cookie header value (empty string clears)
+        #[arg(long)]
+        cookies: Option<String>,
+
+        /// API key (empty string clears)
+        #[arg(long)]
+        api_key: Option<String>,
+
+        /// Auto stop minutes (empty string clears)
+        #[arg(long)]
+        auto_stop_minutes: Option<String>,
+
+        /// Enable site-level traffic management
+        #[arg(long)]
+        traffic_manage_enabled: Option<bool>,
+
+        /// Site traffic mode
+        #[arg(long)]
+        traffic_manage_mode: Option<String>,
+
+        /// Site traffic target (empty string clears)
+        #[arg(long)]
+        traffic_manage_target: Option<String>,
+
+        /// Enable adult content
+        #[arg(long)]
+        adult_enabled: Option<bool>,
+    },
+
+    /// Delete a PT site
+    Delete {
+        /// Site ID, site_id, or name
+        site: String,
+    },
+
+    /// Check PT site status
+    Status {
+        /// Site ID, site_id, or name (omit to check all sites)
+        site: Option<String>,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+pub enum TrafficCmd {
+    /// Show traffic-manage settings
+    Settings,
+
+    /// Update traffic-manage settings
+    UpdateSettings {
+        /// Download path for traffic-managed torrents
+        #[arg(long)]
+        download_path: Option<String>,
+
+        /// Minimal free disk space (GB)
+        #[arg(long)]
+        min_free_disk_space_gb: Option<i32>,
+
+        /// Stats window in minutes
+        #[arg(long)]
+        stats_window_minutes: Option<i32>,
+
+        /// Maximum upload rate (Mbps)
+        #[arg(long)]
+        max_upload_rate_mbps: Option<i32>,
+
+        /// Maximum active torrents
+        #[arg(long)]
+        max_active_torrents: Option<i32>,
+
+        /// Scan interval in minutes
+        #[arg(long)]
+        scan_interval_minutes: Option<i32>,
+
+        /// Cleanup interval in minutes
+        #[arg(long)]
+        cleanup_interval_minutes: Option<i32>,
+
+        /// Download client ID
+        #[arg(long, conflicts_with = "clear_download_client")]
+        download_client_id: Option<String>,
+
+        /// Clear download client binding
+        #[arg(long, default_value_t = false)]
+        clear_download_client: bool,
+
+        /// Enable or disable traffic management
+        #[arg(long)]
+        enabled: Option<bool>,
+    },
+
+    /// List traffic-manage logs
+    Logs {
+        /// Site ID, site_id, or name filter
+        #[arg(long)]
+        site: Option<String>,
+
+        /// Number of rows to return
+        #[arg(long, default_value_t = 50)]
+        limit: u64,
+
+        /// Pagination offset
+        #[arg(long, default_value_t = 0)]
+        offset: u64,
+    },
+
+    /// Show traffic-manage stats
+    Stats,
+
+    /// Trigger an immediate scan
+    TriggerScan,
+
+    /// Trigger an immediate cleanup
+    TriggerCleanup,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum CategoriesCmd {
+    /// List all canonical category slugs
+    List,
+}
+
+#[allow(clippy::large_enum_variant)]
+#[derive(Subcommand, Debug)]
+pub enum Command {
+    /// Manage download clients
+    #[command(subcommand)]
+    Clients(ClientsCmd),
+
+    /// Manage torrents
+    #[command(subcommand)]
+    Torrents(TorrentsCmd),
+
+    /// Manage subscriptions
+    #[command(subcommand)]
+    Subscriptions(SubscriptionsCmd),
+
+    /// Manage PT sites
+    #[command(name = "pt-sites", subcommand)]
+    PtSites(PtSitesCmd),
+
+    /// Search torrents across PT sites
+    Search {
+        /// Search keyword
+        keyword: String,
+
+        /// Restrict search to one or more sites (repeatable)
+        #[arg(long = "site")]
+        sites: Vec<String>,
+
+        /// Restrict search to canonical categories (repeatable)
+        #[arg(long = "category")]
+        categories: Vec<String>,
+    },
+
+    /// Manage traffic-control settings and reports
+    #[command(subcommand)]
+    Traffic(TrafficCmd),
+
+    /// Manage canonical categories
+    #[command(subcommand)]
+    Categories(CategoriesCmd),
+}
