@@ -68,7 +68,6 @@ const enUS = {
   "media.downloadClients.downloadPathColPath": "Path",
   "media.downloadClients.downloadPathColDesc": "Description",
   "media.downloadClients.globalPathPlaceholder": "Required, e.g. /downloads",
-  "media.downloadClients.subPathPlaceholder": "Optional, auto-derived if empty",
   "media.downloadClients.downloadPathPlaceholder": "e.g. /data/video",
   "media.downloadClients.downloadPathDescPlaceholder": "Description (optional)",
   "media.downloadClients.addDownloadPath": "Add download path",

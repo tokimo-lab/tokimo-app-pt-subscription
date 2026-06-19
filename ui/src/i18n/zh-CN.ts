@@ -66,7 +66,6 @@ const zhCN = {
   "media.downloadClients.downloadPathColPath": "路径",
   "media.downloadClients.downloadPathColDesc": "备注",
   "media.downloadClients.globalPathPlaceholder": "必填，例如 /downloads",
-  "media.downloadClients.subPathPlaceholder": "可选，留空自动拼接",
   "media.downloadClients.downloadPathPlaceholder": "例如: /data/video",
   "media.downloadClients.downloadPathDescPlaceholder": "备注（可选）",
   "media.downloadClients.addDownloadPath": "添加下载路径",

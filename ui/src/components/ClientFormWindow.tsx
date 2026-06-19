@@ -166,10 +166,9 @@ function DownloadPathsField({
           const row = rowBySlug.get(slug);
           const path = row?.path ?? "";
           const description = row?.description ?? "";
-          const computedPath =
-            !path && !isGlobal && globalPath
-              ? `${globalPath.replace(/\/$/, "")}/${slug}`
-              : undefined;
+          const subPlaceholder = globalPath
+            ? `${globalPath.replace(/\/$/, "")}/${slug}`
+            : `${t("category.global")}/${slug}`;
 
           return (
             <div
@@ -182,9 +181,7 @@ function DownloadPathsField({
               </span>
               <Input
                 placeholder={
-                  isGlobal
-                    ? t(`${dc}.globalPathPlaceholder`)
-                    : (computedPath ?? t(`${dc}.subPathPlaceholder`))
+                  isGlobal ? t(`${dc}.globalPathPlaceholder`) : subPlaceholder
                 }
                 value={path}
                 onChange={(e) => updateRow(slug, "path", e.target.value)}
