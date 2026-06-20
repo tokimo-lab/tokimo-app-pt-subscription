@@ -28,19 +28,31 @@ auto-downloads torrents matching its filters. The binary name is
 |------|---------|
 | List sites (get ids) | `tokimo-app-pt-subscription pt-sites list` |
 | List clients (get ids) | `tokimo-app-pt-subscription clients list` |
-| Create subscription | `tokimo-app-pt-subscription subscriptions create --title "<name>" --media-type movie --category movie --resolutions 2160p` |
-| Run it immediately | `tokimo-app-pt-subscription subscriptions execute <id\|title>` |
+| Create subscription (auto-runs once) | `tokimo-app-pt-subscription subscriptions create --title "<name>" --media-type movie --category movie --resolutions 2160p` |
+| Trigger an extra run later | `tokimo-app-pt-subscription subscriptions execute <id\|title>` |
 | Check what it did | `tokimo-app-pt-subscription subscriptions logs <id\|title>` |
 | List subscriptions | `tokimo-app-pt-subscription subscriptions list` |
 
+> **Creating a subscription immediately runs one matching pass automatically** —
+> there is no separate manual execute step. Pass `--no-run` to skip that initial
+> run (it will then only run on its schedule), or run
+> `subscriptions execute <id|title>` any time to trigger additional runs later.
+
 ## Create flags (from `subscriptions create`)
 
-Identity / scope:
+**Required:**
 
-- `--title <name>` — subscription title (also used as the search keyword).
-- `--media-type <movie|tv>` — required kind.
+- `--title <name>` — subscription title. This is the **search keyword** matched
+  against your PT sites, so it must be present (the only required flag).
+
+**Identity / scope (optional):**
+
+- `--media-type <movie|tv>` — kind; defaults to `tv` if omitted.
 - `--category <slug>` — canonical category (e.g. `movie`, `tv`); drives save path.
-- `--tmdb-id <id>`, `--year <YYYY>`, `--season <N>`, `--episodes <1,2,3>` — optional metadata / TV scoping.
+- `--tmdb-id <id>`, `--year <YYYY>` — **optional display metadata only**
+  (poster / year). Matching is by `--title`, **not** by tmdb-id, so a
+  subscription with only `--title` works.
+- `--season <N>`, `--episodes <1,2,3>` — optional TV scoping.
 
 Match filters (comma-separated where plural):
 
@@ -56,6 +68,7 @@ Scheduling / routing:
 - `--max-downloads-per-run <N>` — cap downloads per execution.
 - `--site-ids <id1,id2>` — restrict to specific PT site DB ids (omit = all sites).
 - `--download-client-id <id>` — target download client (omit = default client).
+- `--no-run` — skip the automatic initial matching run after creation.
 
 > You can also pass the full raw body via `--json '<CreateSubscriptionInput JSON>'`.
 
@@ -68,14 +81,15 @@ Scheduling / routing:
    tokimo-app-pt-subscription clients list
    ```
 
-2. **Create the subscription** with the desired filters.
+2. **Create the subscription** with the desired filters. It **runs one matching
+   pass immediately** (unless you pass `--no-run`), then continues on its
+   `--interval-minutes` schedule.
 
-3. **(Optional) Execute immediately** instead of waiting for the interval, then
-   inspect logs.
+3. **Inspect the initial run**, and optionally trigger more runs later.
 
    ```bash
-   tokimo-app-pt-subscription subscriptions execute "<title>"
    tokimo-app-pt-subscription subscriptions logs "<title>"
+   tokimo-app-pt-subscription subscriptions execute "<title>"   # extra run on demand
    ```
 
 ## Worked Example — auto-download the 4K version of 速度与激情6
@@ -85,7 +99,8 @@ Scheduling / routing:
 tokimo-app-pt-subscription pt-sites list
 tokimo-app-pt-subscription clients list
 
-# 2. Create a 4K movie subscription that runs every 60 minutes, free torrents only
+# 2. Create a 4K movie subscription that runs every 60 minutes, free torrents
+#    only. This auto-runs one matching pass right after creation.
 tokimo-app-pt-subscription subscriptions create \
   --title "速度与激情6" \
   --media-type movie \
@@ -97,9 +112,11 @@ tokimo-app-pt-subscription subscriptions create \
   --site-ids <site_id> \
   --download-client-id <client_id>
 
-# 3. Run it right away and check what matched
-tokimo-app-pt-subscription subscriptions execute "速度与激情6"
+# 3. Check what the automatic initial run matched (no manual execute needed)
 tokimo-app-pt-subscription subscriptions logs "速度与激情6"
+
+# 4. (optional) trigger an extra run on demand later
+tokimo-app-pt-subscription subscriptions execute "速度与激情6"
 ```
 
 ## Notes
