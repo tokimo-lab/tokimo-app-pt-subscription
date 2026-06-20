@@ -1,3 +1,5 @@
+pub mod torrent_download;
+
 use sea_orm::DatabaseConnection;
 use serde::Serialize;
 use tokimo_package_client_api::downloaders::{
