@@ -271,6 +271,10 @@ pub enum SubscriptionsCmd {
         /// Download client ID
         #[arg(long)]
         download_client_id: Option<String>,
+
+        /// Skip the immediate matching run after creation
+        #[arg(long, default_value_t = false)]
+        no_run: bool,
     },
 
     /// Update a subscription

@@ -702,6 +702,7 @@ pub async fn run_subscriptions(auth: TokimoAuthArgs, cmd: SubscriptionsCmd) -> a
             interval_minutes,
             site_ids,
             download_client_id,
+            no_run,
         } => {
             let input = if let Some(raw_json) = json {
                 serde_json::from_str::<CreateSubscriptionInput>(&raw_json)
@@ -744,6 +745,25 @@ pub async fn run_subscriptions(auth: TokimoAuthArgs, cmd: SubscriptionsCmd) -> a
 
             let sub = SubscriptionRepo::create(&db, input, &user_id).await?;
             println!("Created: {} ({})", sub.title, sub.id);
+
+            if no_run {
+                println!(
+                    "Skipping initial run (--no-run). It will run on its schedule, or trigger now with: \
+                     tokimo-app-pt-subscription subscriptions execute {}",
+                    sub.id
+                );
+            } else {
+                let state = build_cli_state(db.clone())?;
+                let matched =
+                    tokimo_app_pt_subscription::subscriptions::services::execute::execute_subscription(&state, &sub.id)
+                        .await;
+                if matched {
+                    println!("✓ Initial run completed (matched & pushed)");
+                } else {
+                    println!("Initial run completed; no matching torrent this run.");
+                }
+                println!("View logs: tokimo-app-pt-subscription subscriptions logs {}", sub.id);
+            }
         }
         SubscriptionsCmd::Update {
             subscription,
