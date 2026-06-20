@@ -32,6 +32,9 @@ height       = 660
 name        = "tokimo-app-pt-subscription"
 description = "PT subscription manager — subscriptions, download clients, PT sites, and episode search."
 
+[skills]
+dir = "skills"
+
 [database]
 schema         = "pt_subscription"
 migrations_dir = "migrations"
