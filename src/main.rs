@@ -81,7 +81,34 @@ async fn main() -> anyhow::Result<()> {
                     keyword,
                     sites,
                     categories,
-                } => cli::run_search(auth, keyword, sites, categories).await,
+                    resolutions,
+                    free,
+                } => cli::run_search(auth, keyword, sites, categories, resolutions, free).await,
+                Command::Download {
+                    site,
+                    torrent_id,
+                    client,
+                    category,
+                    save_path,
+                    season,
+                    episodes,
+                    tags,
+                    paused,
+                } => {
+                    cli::run_download(cli::DownloadArgs {
+                        auth,
+                        site,
+                        torrent_id,
+                        client,
+                        category,
+                        save_path,
+                        season,
+                        episodes,
+                        tags,
+                        paused,
+                    })
+                    .await
+                }
                 Command::Traffic(traffic_cmd) => cli::run_traffic(auth, traffic_cmd).await,
                 Command::Categories(categories_cmd) => {
                     cli::run_categories(categories_cmd);

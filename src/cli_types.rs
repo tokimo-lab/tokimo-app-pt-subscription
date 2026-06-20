@@ -611,6 +611,53 @@ pub enum Command {
         /// Restrict search to canonical categories (repeatable)
         #[arg(long = "category")]
         categories: Vec<String>,
+
+        /// Filter by resolution token, e.g. 2160p / 1080p (repeatable; "4k" aliases 2160p)
+        #[arg(long = "resolution")]
+        resolutions: Vec<String>,
+
+        /// Keep only free / discounted torrents
+        #[arg(long, default_value_t = false)]
+        free: bool,
+    },
+
+    /// Download a torrent from a PT site to a download client (one-shot)
+    Download {
+        /// PT site: DB id, site_id, or name (resolved like other commands)
+        #[arg(long = "site")]
+        site: String,
+
+        /// Torrent id (the TorrentID column from `search`)
+        #[arg(long = "torrent-id")]
+        torrent_id: String,
+
+        /// Download client: name or id. Defaults to the configured default client
+        #[arg(long = "client")]
+        client: Option<String>,
+
+        /// Canonical category slug (e.g. movie, tv) — used to resolve the save path
+        #[arg(long)]
+        category: Option<String>,
+
+        /// Explicit save-path override (skips category-based resolution)
+        #[arg(long = "save-path")]
+        save_path: Option<String>,
+
+        /// Season number to filter (TV)
+        #[arg(long)]
+        season: Option<i32>,
+
+        /// Episode list to keep (comma-separated, TV)
+        #[arg(long)]
+        episodes: Option<String>,
+
+        /// Tags to attach (comma-separated)
+        #[arg(long)]
+        tags: Option<String>,
+
+        /// Add in paused state
+        #[arg(long, default_value_t = false)]
+        paused: bool,
     },
 
     /// Manage traffic-control settings and reports

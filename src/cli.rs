@@ -19,6 +19,7 @@ use tokimo_app_pt_subscription::db::repos::download_client_repo::{
     CreateDownloadClientInput, DownloadClientDto, DownloadClientRepo, DownloadPath, UpdateDownloadClientInput,
 };
 use tokimo_app_pt_subscription::services::DownloadClientService;
+use tokimo_app_pt_subscription::services::torrent_download::{DownloadTorrentParams, download_torrent_to_client};
 use tokimo_app_pt_subscription::shared::categories::all_categories;
 use tokimo_app_pt_subscription::subscriptions::models::pt_site::{PtSiteDto, PtUserInfoDto};
 use tokimo_app_pt_subscription::subscriptions::repos::pt_site_repo::{
@@ -98,6 +99,30 @@ async fn resolve_client(db: &sea_orm::DatabaseConnection, arg: &str) -> anyhow::
             bail!("{msg}")
         }
     }
+}
+
+/// Resolve the default download client, or produce a helpful error listing clients.
+async fn resolve_default_client(db: &sea_orm::DatabaseConnection) -> anyhow::Result<DownloadClientDto> {
+    use std::fmt::Write as _;
+
+    if let Some(client) = DownloadClientService::get_default(db).await? {
+        return Ok(client);
+    }
+
+    let clients = DownloadClientRepo::list(db).await?;
+    let mut msg = String::from(
+        "No --client given and no default download client is configured.\n\
+         Pass --client <name|id>, or set a default client.",
+    );
+    if clients.is_empty() {
+        msg.push_str("\n  (no download clients configured yet)");
+    } else {
+        msg.push_str("\nAvailable clients:");
+        for c in &clients {
+            let _ = write!(msg, "\n  {}  {}  ({})", c.id, c.name, c.r#type);
+        }
+    }
+    bail!("{msg}")
 }
 
 async fn resolve_subscription(
@@ -1096,6 +1121,8 @@ pub async fn run_search(
     keyword: String,
     sites: Vec<String>,
     categories: Vec<String>,
+    resolutions: Vec<String>,
+    free: bool,
 ) -> anyhow::Result<()> {
     let (db, _user_id) = init(&auth).await?;
     let all_sites = PtSiteRepo::list(&db).await?;
@@ -1123,31 +1150,173 @@ pub async fn run_search(
     let keyword = keyword.trim().to_string();
     let response = search_all_sites(&client, &selected_sites, &keyword, &categories).await;
 
-    if response.results.is_empty() {
+    // Apply post-search resolution / free filters (search service does not filter these).
+    let res_tokens = expand_resolution_tokens(&resolutions);
+    let filtered: Vec<_> = response
+        .results
+        .iter()
+        .filter(|item| !free || is_free_discount(item.result.discount.as_deref()))
+        .filter(|item| res_tokens.is_empty() || matches_resolution(&item.result, &res_tokens))
+        .collect();
+
+    if filtered.is_empty() {
         println!("No search results for '{keyword}'.");
         return Ok(());
     }
 
     println!(
-        "{:<56} {:<18} {:>10} {:>8} {:>8} {}",
-        "Title", "Site", "Size", "Seeders", "Leechers", "Category"
+        "{:<26} {:<16} {:<10} {:>11} {:>8} {:<10} {:<10} {}",
+        "TorrentID", "Site", "Resolution", "Size", "Seeders", "Free", "Category", "Title"
     );
-    println!("{}", "-".repeat(120));
-    for item in &response.results {
+    println!("{}", "-".repeat(130));
+    for item in &filtered {
+        let r = &item.result;
         println!(
-            "{:<56} {:<18} {:>10} {:>8} {:>8} {}",
-            truncate(&item.result.title, 56),
-            truncate(&item.site_name, 18),
-            item.result.size,
-            item.result.seeders,
-            item.result.leechers,
-            item.result.category
+            "{:<26} {:<16} {:<10} {:>11} {:>8} {:<10} {:<10} {}",
+            r.id,
+            truncate(&item.site_name, 16),
+            truncate(r.resolution.as_deref().unwrap_or("-"), 10),
+            truncate(&r.size, 11),
+            r.seeders,
+            truncate(r.discount.as_deref().unwrap_or("-"), 10),
+            truncate(&r.category, 10),
+            truncate(&r.title, 50),
         );
     }
-    println!("\nTotal results: {}", response.total);
+    println!("\nTotal results: {}", filtered.len());
     println!("Site summaries:");
     for summary in &response.site_summaries {
         println!("  {:<20} {}", summary.site_name, summary.count);
+    }
+    println!(
+        "\nTo download a result: {} download --site <Site> --torrent-id <TorrentID> --category <slug>",
+        env!("CARGO_BIN_NAME")
+    );
+
+    Ok(())
+}
+
+/// Expand requested resolution filter tokens (lowercased). `4k`/`uhd` alias `2160p`.
+fn expand_resolution_tokens(resolutions: &[String]) -> Vec<String> {
+    let mut tokens = Vec::<String>::new();
+    for raw in resolutions {
+        let lower = raw.trim().to_lowercase();
+        if lower.is_empty() {
+            continue;
+        }
+        if matches!(lower.as_str(), "4k" | "2160p" | "uhd") {
+            for alias in ["2160p", "4k", "uhd"] {
+                if !tokens.iter().any(|t| t == alias) {
+                    tokens.push(alias.to_string());
+                }
+            }
+        } else if !tokens.iter().any(|t| t == &lower) {
+            tokens.push(lower);
+        }
+    }
+    tokens
+}
+
+/// Match a result if any requested token appears in its resolution field or title.
+fn matches_resolution(result: &tokimo_pt_search::PtSearchResult, tokens: &[String]) -> bool {
+    let res = result.resolution.as_deref().unwrap_or("").to_lowercase();
+    let title = result.title.to_lowercase();
+    tokens.iter().any(|t| res.contains(t) || title.contains(t))
+}
+
+/// Lenient check for a "free"/discounted torrent.
+fn is_free_discount(discount: Option<&str>) -> bool {
+    let Some(value) = discount else {
+        return false;
+    };
+    let lower = value.to_lowercase();
+    lower.contains("free") || value.contains("免费") || lower.contains("100%") || lower.contains("0%")
+}
+
+/// Arguments for the one-shot `download` command (struct to keep the dispatch tidy).
+pub struct DownloadArgs {
+    pub auth: TokimoAuthArgs,
+    pub site: String,
+    pub torrent_id: String,
+    pub client: Option<String>,
+    pub category: Option<String>,
+    pub save_path: Option<String>,
+    pub season: Option<i32>,
+    pub episodes: Option<String>,
+    pub tags: Option<String>,
+    pub paused: bool,
+}
+
+pub async fn run_download(args: DownloadArgs) -> anyhow::Result<()> {
+    let DownloadArgs {
+        auth,
+        site,
+        torrent_id,
+        client,
+        category,
+        save_path,
+        season,
+        episodes,
+        tags,
+        paused,
+    } = args;
+
+    let (db, _user_id) = init(&auth).await?;
+
+    let site = resolve_site(&db, &site).await?;
+
+    // Resolve the client: explicit arg, else the configured default client.
+    let client = match client {
+        Some(arg) => resolve_client(&db, &arg).await?,
+        None => resolve_default_client(&db).await?,
+    };
+
+    let episodes = match episodes {
+        Some(raw) => {
+            let parsed = parse_csv_i32(&raw, "episode")?;
+            if parsed.is_empty() { None } else { Some(parsed) }
+        }
+        None => None,
+    };
+    let tags = parse_csv_opt(tags);
+
+    let http_client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(30))
+        .build()
+        .context("build http client failed")?;
+
+    let outcome = download_torrent_to_client(
+        &db,
+        &http_client,
+        DownloadTorrentParams {
+            site_id: site.id.clone(),
+            torrent_id,
+            client_id: client.id.clone(),
+            category,
+            save_path,
+            season,
+            episodes,
+            tags,
+            paused: Some(paused),
+        },
+    )
+    .await
+    .map_err(|e| anyhow::anyhow!("download failed: {e}"))?;
+
+    let path_label = outcome.save_path.as_deref().unwrap_or("(client default)");
+    println!(
+        "✓ Added '{}' to {} (site: {}, save path: {})",
+        outcome.torrent_name, client.name, site.name, path_label
+    );
+    if outcome.excluded_files > 0 {
+        println!(
+            "  Episode filter: kept {} of {} files",
+            outcome.total_files - outcome.excluded_files,
+            outcome.total_files
+        );
+    }
+    if paused {
+        println!("  Torrent added in paused state.");
     }
 
     Ok(())
