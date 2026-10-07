@@ -29,6 +29,16 @@ export default defineApp({
     defaultSize: { width: 1080, height: 660 },
     category: "app",
   },
+  standalone: {
+    createWindow: (route) => ({
+      type: "pt-subscription",
+      route: route.split(/[?#]/, 1)[0].slice(1),
+    }),
+    getRoute: (window) =>
+      window.type === "pt-subscription"
+        ? `/${window.route && window.route !== "/" ? window.route : "subscriptions"}`
+        : null,
+  },
   mount(container, ctx): Dispose {
     const applyLocale = (raw: string) => {
       const target = SUPPORTED_LOCALES.includes(raw) ? raw : "en-US";
