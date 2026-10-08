@@ -38,7 +38,7 @@ export function AppWindow() {
         collapsed={collapsed}
         onToggleCollapsed={() => setCollapsed(!collapsed)}
       />
-      <div className="flex-1 min-w-0 overflow-auto p-4">
+      <div className="app-safe-area flex-1 min-w-0 overflow-auto bg-surface-base [--app-safe-area-padding:1rem]">
         <Page />
       </div>
     </div>
