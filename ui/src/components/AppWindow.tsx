@@ -1,4 +1,4 @@
-import { useWindowNav } from "@tokimo/sdk";
+import { useStandaloneDocumentScroll, useWindowNav } from "@tokimo/sdk";
 import { useEffect, useState } from "react";
 import DownloadClientsPage from "./DownloadClientsPage";
 import PtSitesPage from "./PtSitesPage";
@@ -16,6 +16,7 @@ const pages: Record<SectionId, React.FC> = {
 const DEFAULT_SECTION: SectionId = "subscriptions";
 
 export function AppWindow() {
+  const documentScroll = useStandaloneDocumentScroll();
   const { route, replace } = useWindowNav();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -31,14 +32,18 @@ export function AppWindow() {
 
   const Page = pages[section];
   return (
-    <div className="relative flex h-full">
+    <div
+      className={`relative flex ${documentScroll ? "min-h-dvh flex-col" : "h-full"}`}
+    >
       <Sidebar
         active={section}
         onNavigate={(id) => replace(id)}
         collapsed={collapsed}
         onToggleCollapsed={() => setCollapsed(!collapsed)}
       />
-      <div className="app-safe-area flex-1 min-w-0 overflow-auto bg-surface-base [--app-safe-area-padding:1rem]">
+      <div
+        className={`app-safe-area flex-1 min-w-0 bg-surface-base [--app-safe-area-padding:1rem] ${documentScroll ? "overflow-visible" : "overflow-auto"}`}
+      >
         <Page />
       </div>
     </div>

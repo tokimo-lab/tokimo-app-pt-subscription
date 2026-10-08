@@ -1,4 +1,4 @@
-import { useWindowActions } from "@tokimo/sdk";
+import { useStandaloneDocumentScroll, useWindowActions } from "@tokimo/sdk";
 import { AutoComplete, Image, Popover, ScrollArea, Tag } from "@tokimo/ui";
 import { ChevronDown, Clock, Film, Star, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -167,6 +167,7 @@ function SuggestionLabel({ media }: { media: TmdbMedia }) {
 export default function SearchPage() {
   const windowActions = useWindowActions();
   const { t } = useTranslation();
+  const documentScroll = useStandaloneDocumentScroll();
   const [keyword, setKeyword] = useState("");
   const [suggestions, setSuggestions] = useState<TmdbMedia[]>([]);
   const [history, setHistory] = useState<SearchHistoryItem[]>([]);
@@ -395,7 +396,7 @@ export default function SearchPage() {
   const showInitialState = !hasSearched;
 
   return (
-    <div className="flex flex-col h-full">
+    <div className={`flex flex-col ${documentScroll ? "" : "h-full"}`}>
       {/* Search Input */}
       <div
         className={`transition-all duration-300 ${showInitialState ? "flex-1 flex flex-col items-center justify-center" : ""}`}
@@ -518,7 +519,9 @@ export default function SearchPage() {
 
       {/* Results (after search) */}
       {hasSearched && (
-        <div className="flex-1 min-h-0 overflow-auto space-y-4 pt-2">
+        <div
+          className={`flex-1 min-h-0 space-y-4 pt-2 ${documentScroll ? "overflow-visible" : "overflow-auto"}`}
+        >
           {tmdbLoading ? (
             <div className="rounded-xl border border-border-base bg-black/[0.02] dark:bg-white/[0.03] p-4">
               <div className="flex items-center gap-2 mb-3">

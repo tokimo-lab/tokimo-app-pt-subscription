@@ -1,3 +1,4 @@
+import { cssVar, TOKEN } from "@tokimo/ui";
 /**
  * PT 订阅管理 app — 管理 PT 站点订阅、RSS 源、自动下载规则。
  */
@@ -30,6 +31,8 @@ export default defineApp({
     category: "app",
   },
   standalone: {
+    layout: "document",
+    background: cssVar(TOKEN.surfaceBase),
     createWindow: (route) => ({
       type: "pt-subscription",
       route: route.split(/[?#]/, 1)[0].slice(1),
